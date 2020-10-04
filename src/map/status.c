@@ -11007,10 +11007,6 @@ static int status_change_end_(struct block_list *bl, enum sc_type type, int tid)
 			status->damage(NULL, bl, damage,0,0,1);
 		}
 			break;
-		case SC_PYROCLASTIC:
-			if(bl->type == BL_PC)
-				skill->break_equip(bl,EQP_WEAPON,10000,BCT_SELF);
-			break;
 		case SC_RUN:
 			{
 				struct unit_data *ud = unit->bl2ud(bl);
