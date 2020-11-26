@@ -3406,9 +3406,11 @@ static int skill_attack(int attack_type, struct block_list *src, struct block_li
 		case NPC_CRITICALSLASH:
 		case TF_DOUBLE:
 		case GS_CHAINACTION:
+#ifdef RENWEWAL
 		case SN_SHARPSHOOTING:
 		case MA_SHARPSHOOTING:
 		case NJ_KIRIKAGE:
+#endif
 			dmg.dmotion = clif->damage(src, bl, dmg.amotion, dmg.dmotion, damage, dmg.div_, dmg.type, dmg.damage2);
 			break;
 

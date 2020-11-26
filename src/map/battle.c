@@ -4502,7 +4502,11 @@ static struct Damage battle_calc_weapon_attack(struct block_list *src, struct bl
 
 			case TF_DOUBLE: //For NPC used skill.
 			case GS_CHAINACTION:
+#ifndef RENEWAL
 				wd.type = BDT_CRIT | BDT_MULTICRIT;
+#else
+				wd.type = BDT_MULTIHIT;
+#endif
 				break;
 
 			case GS_GROUNDDRIFT:
@@ -4630,21 +4634,35 @@ static struct Damage battle_calc_weapon_attack(struct block_list *src, struct bl
 
 	if (sd && !skill_id) {
 		//Check for double attack.
+#ifdef RENEWAL
 		if (sd->bonus.double_rate > 0
 		 || (skill_lv = pc->checkskill(sd, TF_DOUBLE)) > 0
 		 || (sc != NULL && sc->data[SC_KAGEMUSYA] != NULL)
+#else
+		if (( (skill_lv=pc->checkskill(sd,TF_DOUBLE)) > 0 && sd->weapontype1 == W_DAGGER )
+		 || ( sd->bonus.double_rate > 0 && sd->weapontype1 != W_FIST ) //Will fail bare-handed
+		 || ( sc && sc->data[SC_KAGEMUSYA] && sd->weapontype1 != W_FIST ) // Need confirmation
+#endif
 		) {
 			//Success chance is not added, the higher one is used [Skotlex]
 			if( rnd()%100 < ( 5*skill_lv > sd->bonus.double_rate ? 5*skill_lv : sc && sc->data[SC_KAGEMUSYA]?sc->data[SC_KAGEMUSYA]->val1*3:sd->bonus.double_rate ) )
 			{
 				wd.div_ = skill->get_num(TF_DOUBLE,skill_lv?skill_lv:1);
+#ifdef RENEWAL
 				wd.type = BDT_CRIT | BDT_MULTICRIT;
+#else
+				wd.type = BDT_MULTIHIT;
+#endif
 			}
 		}
 		else if( sd->weapontype1 == W_REVOLVER && (skill_lv = pc->checkskill(sd,GS_CHAINACTION)) > 0 && rnd()%100 < 5*skill_lv )
 		{
 			wd.div_ = skill->get_num(GS_CHAINACTION,skill_lv);
-			wd.type = BDT_CRIT | BDT_MULTICRIT;
+#ifdef RENEWAL
+				wd.type = BDT_CRIT | BDT_MULTICRIT;
+#else
+				wd.type = BDT_MULTIHIT;
+#endif
 		}
 		else if(sc && sc->data[SC_FEARBREEZE] && sd->weapontype1==W_BOW
 			&& (i = sd->equip_index[EQI_AMMO]) >= 0 && sd->inventory_data[i] && sd->status.inventory[i].amount > 1){
@@ -4684,7 +4702,15 @@ static struct Damage battle_calc_weapon_attack(struct block_list *src, struct bl
 	}
 
 	//Check for critical
+#ifdef RENWAL
 	if (sstatus->cri != 0)
+#else
+	if( !flag.cri && wd.type != BDT_MULTIHIT && sstatus->cri &&
+		(!skill_id ||
+		skill_id == KN_AUTOCOUNTER ||
+		skill_id == SN_SHARPSHOOTING || skill_id == MA_SHARPSHOOTING ||
+		skill_id == NJ_KIRIKAGE))
+#endif
 	{
 		short cri = sstatus->cri;
 		if (sd != NULL) {
