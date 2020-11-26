@@ -20931,10 +20931,10 @@ static void skill_validate_hittype(struct config_setting_t *conf, struct s_skill
 					sk->hit[i] = BDT_SKILL;
 				else if (strcmpi(hit_type, "BDT_MULTIHIT") == 0)
 					sk->hit[i] = BDT_MULTIHIT;
-				else if (strcmpi(type, "BDT_MULTICRIT") == 0)
-					sk->hit = BDT_MULTICRIT;
-				else if (strcmpi(type, "BDT_CRIT") == 0)
-					sk->hit = BDT_CRIT;
+				else if (strcmpi(hit_type, "BDT_MULTICRIT") == 0)
+					sk->hit[i] = BDT_MULTICRIT;
+				else if (strcmpi(hit_type, "BDT_CRIT") == 0)
+					sk->hit[i] = BDT_CRIT;
 				else if (strcmpi(hit_type, "BDT_NORMAL") != 0)
 					ShowWarning("%s: Invalid hit type %s specified in level %d for skill ID %d in %s! Defaulting to BDT_NORMAL...\n",
 						    __func__, hit_type, i + 1, sk->nameid, conf->file);
@@ -20953,10 +20953,10 @@ static void skill_validate_hittype(struct config_setting_t *conf, struct s_skill
 			hit = BDT_SKILL;
 		} else if (strcmpi(hit_type, "BDT_MULTIHIT") == 0) {
 			hit = BDT_MULTIHIT;
-		} else if (strcmpi(type, "BDT_MULTICRIT") == 0) {
-			sk->hit = BDT_MULTICRIT;
-		} else if (strcmpi(type, "BDT_CRIT") == 0) {
-			sk->hit = BDT_CRIT;
+		} else if (strcmpi(hit_type, "BDT_MULTICRIT") == 0) {
+			hit = BDT_MULTICRIT;
+		} else if (strcmpi(hit_type, "BDT_CRIT") == 0) {
+			hit = BDT_CRIT;
 		} else if (strcmpi(hit_type, "BDT_NORMAL") != 0) {
 			ShowWarning("%s: Invalid hit type %s specified for skill ID %d in %s! Defaulting to BDT_NORMAL...\n",
 				    __func__, hit_type, sk->nameid, conf->file);
@@ -21343,7 +21343,7 @@ static void skill_validate_damagetype(struct config_setting_t *conf, struct s_sk
 					sk->nk |= NK_NO_CARDFIX_DEF;
 				else
 					sk->nk &= ~NK_NO_CARDFIX_DEF;
-			} else if (strcmpi(type, "CritDamage") == 0) {
+			} else if (strcmpi(damage_type, "CritDamage") == 0) {
 				if (on != 0) {
 					sk->nk |= NK_CRITICAL;
 				} else {
