@@ -13880,7 +13880,8 @@ static int skill_unit_onplace_timer(struct skill_unit *src, struct block_list *b
 			break;
 
 		case UNT_FIRE_EXPANSION_TEAR_GAS:
-			sc_start(ss, bl, SC_FIRE_EXPANSION_TEAR_GAS, 100, sg->skill_lv, 1000);
+			if (sc_start(ss, bl, SC_FIRE_EXPANSION_TEAR_GAS, 100, sg->skill_lv, 1000))
+				sc_start(ss, bl, SC_FIRE_EXPANSION_TEAR_GAS_SOB, 100, sg->skill_lv, 1000);
 			break;
 
 		case UNT_HELLS_PLANT:
