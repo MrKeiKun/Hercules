@@ -4824,6 +4824,8 @@ struct {
 	struct HPMHookPoint *HP_pc_autocast_remove_post;
 	struct HPMHookPoint *HP_pc_skillatk_bonus_pre;
 	struct HPMHookPoint *HP_pc_skillatk_bonus_post;
+	struct HPMHookPoint *HP_pc_sub_skillatk_bonus_pre;
+	struct HPMHookPoint *HP_pc_sub_skillatk_bonus_post;
 	struct HPMHookPoint *HP_pc_skillheal_bonus_pre;
 	struct HPMHookPoint *HP_pc_skillheal_bonus_post;
 	struct HPMHookPoint *HP_pc_skillheal2_bonus_pre;
@@ -11913,6 +11915,8 @@ struct {
 	int HP_pc_autocast_remove_post;
 	int HP_pc_skillatk_bonus_pre;
 	int HP_pc_skillatk_bonus_post;
+	int HP_pc_sub_skillatk_bonus_pre;
+	int HP_pc_sub_skillatk_bonus_post;
 	int HP_pc_skillheal_bonus_pre;
 	int HP_pc_skillheal_bonus_post;
 	int HP_pc_skillheal2_bonus_pre;
