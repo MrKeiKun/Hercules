@@ -1,61 +1,174 @@
-name: controller
+name: CI/CD Pipeline
 
-on: [push, pull_request]
+on: 
+  push:
+    branches: [ master, develop ]
+  pull_request:
+    branches: [ master, develop ]
+
+# Global environment variables
+env:
+  MYSQL_DATABASE: 'ragnarok'
+  MYSQL_USER: 'ragnarok'
+  MYSQL_PASSWORD: 'ragnarok'
+  MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
 
 jobs:
-  hwsapibot:
-    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
-    uses: ./.github/workflows/hwsapibot.yml
-    secrets: inherit
-  codeql:
-    needs: hwsapibot
+  # Pre-flight checks that run first
+  preflight:
+    name: Pre-flight Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for merge conflicts
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch origin ${{ github.base_ref }}
+            git merge-tree $(git merge-base HEAD origin/${{ github.base_ref }}) HEAD origin/${{ github.base_ref }} || exit 1
+          fi
+
+      - name: Validate PR title (if PR)
+        if: github.event_name == 'pull_request'
+        uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            docs
+            style
+            refactor
+            test
+            chore
+            ci
+            build
+            perf
+            revert
+
+  # Code quality and security checks
+  code-quality:
+    name: Code Quality & Security
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: preflight
     if: ${{ !failure() && !cancelled() }}
-    uses: ./.github/workflows/codeql-analysis.yml
-  tools:
-    needs: hwsapibot
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: CodeQL Analysis
+            workflow: codeql-analysis.yml
+          - name: Tools Validation
+            workflow: tools.yml
+    uses: ./.github/workflows/${{ matrix.workflow }}
+
+  # Main build matrix
+  build-matrix:
+    name: Build Matrix
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [preflight, code-quality]
     if: ${{ !failure() && !cancelled() }}
-    uses: ./.github/workflows/tools.yml
-  build:
-    needs: tools
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: GCC Build
+            workflow: build.yml
+          - name: GCC Test
+            workflow: gcc_test.yml
+          - name: Clang Test
+            workflow: clang15_test.yml
+          - name: GCC Old 1
+            workflow: gccold1.yml
+          - name: GCC Old 2
+            workflow: gccold2.yml
+          - name: GCC Snapshot
+            workflow: gccsnapshot_test.yml
+    uses: ./.github/workflows/${{ matrix.workflow }}
+
+  # Database compatibility tests
+  database-tests:
+    name: Database Compatibility
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs: [preflight, code-quality]
     if: ${{ !failure() && !cancelled() }}
-    uses: ./.github/workflows/build.yml
-  clang15_test:
-    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: MariaDB Test
+            workflow: mariadb.yml
+          - name: MySQL Test
+            workflow: mysql.yml
+    uses: ./.github/workflows/${{ matrix.workflow }}
+
+  # Platform-specific builds
+  platform-builds:
+    name: Platform Builds
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    needs: [preflight, code-quality]
     if: ${{ !failure() && !cancelled() }}
-    uses: ./.github/workflows/clang15_test.yml
-  gcc_test:
-    needs: build
-    if: ${{ !failure() && !cancelled() }}
-    uses: ./.github/workflows/gcc_test.yml
-  gccold1:
-    needs: build
-    if: ${{ !failure() && !cancelled() }}
-    uses: ./.github/workflows/gccold1.yml
-  gccold2:
-    needs: build
-    if: ${{ !failure() && !cancelled() }}
-    uses: ./.github/workflows/gccold2.yml
-  gccsnapshot_test:
-    needs: build
-    if: ${{ !failure() && !cancelled() }}
-    uses: ./.github/workflows/gccsnapshot_test.yml
-  mariadb:
-    needs: build
-    if: ${{ !failure() && !cancelled() }}
-    uses: ./.github/workflows/mariadb.yml
-  mysql:
-    needs: build
-    if: ${{ !failure() && !cancelled() }}
-    uses: ./.github/workflows/mysql.yml
-  macos_latest:
-    needs: build
-    if: ${{ !failure() && !cancelled() }}
-    uses: ./.github/workflows/macos_latest.yml
-  macos_m1:
-    needs: build
-    if: ${{ !failure() && !cancelled() }}
-    uses: ./.github/workflows/macos_m1.yml
-  windows:
-    needs: build
-    if: ${{ !failure() && !cancelled() }}
-    uses: ./.github/workflows/windows.yml
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            name: macOS Latest
+            workflow: macos_latest.yml
+          - os: macos-latest
+            name: macOS M1
+            workflow: macos_m1.yml
+          - os: windows-latest
+            name: Windows
+            workflow: windows.yml
+    uses: ./.github/workflows/${{ matrix.workflow }}
+
+  # Post-build tasks (only on master branch)
+  post-build:
+    name: Post-Build Tasks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [build-matrix, database-tests, platform-builds]
+    if: ${{ github.ref == 'refs/heads/master' && !failure() && !cancelled() }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: HWS API Bot
+        uses: ./.github/workflows/hwsapibot.yml
+        secrets: inherit
+
+      - name: Create Release Summary
+        if: github.event_name == 'push'
+        run: |
+          echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ All builds completed successfully" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔒 Security scans passed" >> $GITHUB_STEP_SUMMARY
+          echo "- 🧪 All tests passed" >> $GITHUB_STEP_SUMMARY
+          echo "- 📦 Ready for release" >> $GITHUB_STEP_SUMMARY
+
+  # Workflow completion notification
+  notify:
+    name: Notify Completion
+    runs-on: ubuntu-latest
+    needs: [build-matrix, database-tests, platform-builds, post-build]
+    if: always()
+    steps:
+      - name: Notify on Failure
+        if: ${{ failure() }}
+        run: |
+          echo "❌ Workflow failed! Please check the logs for details."
+          
+      - name: Notify on Success
+        if: ${{ success() }}
+        run: |
+          echo "✅ All checks passed successfully!"

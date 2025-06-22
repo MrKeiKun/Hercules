@@ -1,4 +1,4 @@
-name: build
+name: Build
 
 on: workflow_call
 
@@ -26,7 +26,7 @@ jobs:
         exclude:
           - PACKET_VERSION: "--enable-packetver=20100105"
             CLIENT_TYPE: "--enable-packetver-zero"
-          - CC: "clang-11"
+          - CC: "clang-13"
             LTO: "--enable-lto"
 
     # github.head_ref will stop previous runs in the same PR (if in a PR)
@@ -58,29 +58,76 @@ jobs:
       CC: ${{ matrix.CC }}
       CONFIGURE_FLAGS: CC=${{ matrix.CC }} --enable-debug --enable-Werror --enable-buildbot ${{ matrix.RENEWAL }} ${{ matrix.HTTPLIB }} ${{ matrix.CLIENT_TYPE }} ${{ matrix.SANITIZER }} ${{ matrix.PACKET_VERSION }} --enable-epoll
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
           fetch-depth: 1
 
-      - name: info
+      - name: Setup build cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/ccache
+            .ccache
+          key: build-cache-${{ runner.os }}-${{ matrix.CC }}-${{ hashFiles('**/*.c', '**/*.h', '**/*.in') }}
+          restore-keys: |
+            build-cache-${{ runner.os }}-${{ matrix.CC }}-
+            build-cache-${{ runner.os }}-
+
+      - name: Setup ccache
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ccache
+          echo "ccache_dir = $HOME/.cache/ccache" >> ~/.ccache/ccache.conf
+          echo "max_size = 2G" >> ~/.ccache/ccache.conf
+          echo "compression = true" >> ~/.ccache/ccache.conf
+
+      - name: System info
         run: |
           uname -a
+          echo "CC: $CC"
+          echo "Configure flags: $CONFIGURE_FLAGS"
 
-      - name: install packages
+      - name: Install packages
         run: |
           ./tools/ci/retry.sh apt-get update
-          ./tools/ci/retry.sh apt-get install -y -qq $INSTALL_PACKAGES $DEBIAN_COMMON_PACKAGES
+          ./tools/ci/retry.sh apt-get install -y -qq $INSTALL_PACKAGES $DEBIAN_COMMON_PACKAGES ccache
 
-      - name: init database
+      - name: Initialize database
         run: |
           ./tools/ci/travis.sh importdb ragnarok ragnarok ragnarok $SQLHOST
 
-      - name: get plugins
+      - name: Get plugins
         run: |
           ./tools/ci/travis.sh getplugins || true
 
-      - name: build
+      - name: Build with ccache
         run: |
+          export PATH="/usr/lib/ccache:$PATH"
           ./tools/ci/travis.sh build $CONFIGURE_FLAGS
 
-        # for run default config will show warnings
+      - name: Build artifacts
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts-${{ matrix.CC }}-${{ matrix.PACKET_VERSION }}
+          path: |
+            map-server
+            char-server
+            login-server
+            api-server
+            *.so
+            *.dll
+            *.dylib
+          retention-days: 7
+
+      - name: Build summary
+        if: always()
+        run: |
+          echo "## Build Summary for ${{ matrix.CC }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Compiler:** ${{ matrix.CC }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Packet Version:** ${{ matrix.PACKET_VERSION }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Client Type:** ${{ matrix.CLIENT_TYPE || 'default' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **HTTP Library:** ${{ matrix.HTTPLIB || 'default' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **LTO:** ${{ matrix.LTO || 'disabled' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status:** ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
