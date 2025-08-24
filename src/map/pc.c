@@ -784,6 +784,18 @@ static int pc_equippoint(struct map_session_data *sd, int n)
 		return 0; //Not equippable by players.
 
 	ep = sd->inventory_data[n]->equip;
+
+	// Only allow shadow equipment to go into shadow slots and vice versa
+	if (itemdb_is_shadowequip(ep)) {
+		// This is shadow equipment
+		if (!itemdb_is_shadowequip(sd->status.inventory[n].equip))
+			return 0; // Trying to equip to non-shadow slot
+	} else {
+		// This is regular equipment
+		if (itemdb_is_shadowequip(sd->status.inventory[n].equip))
+			return 0; // Trying to equip to shadow slot
+	}
+
 	if (sd->inventory_data[n]->subtype == W_DAGGER
 	 || sd->inventory_data[n]->subtype == W_1HSWORD
 	 || sd->inventory_data[n]->subtype == W_1HAXE
@@ -1081,6 +1093,17 @@ static int pc_isequip(struct map_session_data *sd, int n)
 
 	if (pc_has_permission(sd, PC_PERM_USE_ALL_EQUIPMENT))
 		return 1;
+
+	// Only allow shadow equipment to go into shadow slots and vice versa
+	if (itemdb_is_shadowequip(item->equip)) {
+		// Shadow equipment can only go into shadow slots
+		if (!itemdb_is_shadowequip(sd->status.inventory[n].equip))
+			return 0;
+	} else {
+		// Regular equipment cannot go into shadow slots
+		if (itemdb_is_shadowequip(sd->status.inventory[n].equip))
+			return 0;
+	}
 
 	if (item->elv != 0 && sd->status.base_level < item->elv) {
 #if PACKETVER >= 20100525
