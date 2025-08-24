@@ -354,6 +354,16 @@ static int unit_walk_toxy_timer(int tid, int64 tick, int id, intptr_t data)
 	}
 
 	ud->walktimer = INVALID_TIMER;
+	
+	// Force regular position updates while running to ensure client synchronization
+	struct status_change *sc = status->get_sc(bl);
+	if (sc && sc->data[SC_RUN]) {
+		if (bl->type == BL_PC) {
+			clif->blown(bl);
+			clif->fixpos(bl);
+			clif->move(ud);
+		}
+	}
 
 	if (bl->prev == NULL) // Stop moved because it is missing from the block_list.
 		return 1;
@@ -802,8 +812,12 @@ static void unit_run_hit(struct block_list *bl, struct status_change *sc, struct
 	if (type == SC_RUN) {
 		if (lv > 0)
 			skill->blown(bl, bl, skill->get_blewcount(TK_RUN, lv), unit->getdir(bl), 0);
+		// Ensure proper position sync when stopping
+		clif->move(ud);
 		clif->fixpos(bl); //Why is a clif->slide (skill->blown) AND a fixpos needed? Ask Aegis.
 		clif->sc_end(bl, bl->id, AREA, status->get_sc_icon(SC_TING));
+		if (bl->type == BL_PC)
+			clif->blown(bl);
 	} else if (sd != NULL) {
 		clif->fixpos(bl);
 		skill->castend_damage_id(bl, &sd->bl, RA_WUGDASH, lv, timer->gettick(), SD_LEVEL);
@@ -833,6 +847,15 @@ static bool unit_run(struct block_list *bl, struct map_session_data *sd, enum sc
 	if (unit->can_move(bl) == 0) {
 		status_change_end(bl, type, INVALID_TIMER);
 		return false;
+	}
+	
+	// Force position sync at start of running
+	if (bl->type == BL_PC) {
+		clif->blown(bl);
+		clif->fixpos(bl);
+		struct unit_data *ud = unit->bl2ud(bl);
+		if (ud)
+			clif->move(ud);
 	}
 
 	// Determine destination cell
