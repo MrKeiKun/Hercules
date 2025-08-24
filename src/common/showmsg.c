@@ -604,6 +604,57 @@ static int FPRINTF(FILE *file, const char *fmt, ...)
 
 #endif// not _WIN32
 
+/**
+ * Safe fprintf wrapper that checks for errors and logs them.
+ * 
+ * @param stream The file stream to write to
+ * @param format The format string
+ * @param ... Variable arguments
+ * @return true on success, false on failure
+ */
+static bool safe_fprintf(FILE *stream, const char *format, ...)
+{
+	if (!stream || !format) {
+		return false;
+	}
+	
+	va_list ap;
+	va_start(ap, format);
+	int ret = vfprintf(stream, format, ap);
+	va_end(ap);
+	
+	if (ret < 0) {
+		ShowError("safe_fprintf: Write to file failed (error %d).\n", ret);
+		return false;
+	}
+	
+	return true;
+}
+
+/**
+ * Safe vfprintf wrapper that checks for errors and logs them.
+ * 
+ * @param stream The file stream to write to
+ * @param format The format string
+ * @param ap Variable argument list
+ * @return true on success, false on failure
+ */
+static bool safe_vfprintf(FILE *stream, const char *format, va_list ap)
+{
+	if (!stream || !format) {
+		return false;
+	}
+	
+	int ret = vfprintf(stream, format, ap);
+	
+	if (ret < 0) {
+		ShowError("safe_vfprintf: Write to file failed (error %d).\n", ret);
+		return false;
+	}
+	
+	return true;
+}
+
 static int vShowMessage_(enum msg_type flag, const char *string, va_list ap) __attribute__((format(printf, 2, 0)));
 static int vShowMessage_(enum msg_type flag, const char *string, va_list ap)
 {
@@ -624,15 +675,19 @@ static int vShowMessage_(enum msg_type flag, const char *string, va_list ap)
 			time_t curtime;
 			time(&curtime);
 			strftime(timestring, 254, "%m/%d/%Y %H:%M:%S", localtime(&curtime));
-			fprintf(log,"(%s) [ %s ] : ",
+			if (!safe_fprintf(log,"(%s) [ %s ] : ",
 				timestring,
 				flag == MSG_WARNING ? "Warning" :
 				flag == MSG_ERROR ? "Error" :
 				flag == MSG_SQL ? "SQL Error" :
 				flag == MSG_DEBUG ? "Debug" :
-				"Unknown");
+				"Unknown")) {
+				// Error already logged by safe_fprintf
+			}
 			va_copy(apcopy, ap);
-			vfprintf(log,string,apcopy);
+			if (!safe_vfprintf(log, string, apcopy)) {
+				// Error already logged by safe_vfprintf
+			}
 			va_end(apcopy);
 			fclose(log);
 		}
@@ -709,9 +764,13 @@ static int vShowMessage_(enum msg_type flag, const char *string, va_list ap)
 			FPRINTF(STDERR, CL_RED"[ERROR]"CL_RESET": Could not open '"CL_WHITE"%s"CL_RESET"', access denied.\n", DEBUGLOGPATH);
 			FFLUSH(STDERR);
 		} else {
-			fprintf(fp,"%s ", prefix);
+			if (!safe_fprintf(fp,"%s ", prefix)) {
+				// Error already logged by safe_fprintf
+			}
 			va_copy(apcopy, ap);
-			vfprintf(fp,string,apcopy);
+			if (!safe_vfprintf(fp, string, apcopy)) {
+				// Error already logged by safe_vfprintf
+			}
 			va_end(apcopy);
 			fclose(fp);
 		}

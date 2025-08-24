@@ -209,15 +209,33 @@ static struct thread_handle *thread_create_opt(threadFunc entry_point, void *par
 #ifdef WIN32
 	handle->hThread = CreateThread(NULL, stack_size, thread_main_redirector, handle, 0, NULL);
 #else
-	pthread_attr_init(&attr);
-	pthread_attr_setstacksize(&attr, stack_size);
-
-	if (pthread_create(&handle->hThread, &attr, thread_main_redirector, handle) != 0) {
+	if (pthread_attr_init(&attr) != 0) {
+		ShowError("thread_create_opt: pthread_attr_init failed.\n");
 		handle->proc = NULL;
 		handle->param = NULL;
 		return NULL;
 	}
-	pthread_attr_destroy(&attr);
+	
+	if (pthread_attr_setstacksize(&attr, stack_size) != 0) {
+		ShowError("thread_create_opt: pthread_attr_setstacksize failed.\n");
+		pthread_attr_destroy(&attr);
+		handle->proc = NULL;
+		handle->param = NULL;
+		return NULL;
+	}
+
+	int ret = pthread_create(&handle->hThread, &attr, thread_main_redirector, handle);
+	if (ret != 0) {
+		ShowError("thread_create_opt: pthread_create failed with error %d.\n", ret);
+		pthread_attr_destroy(&attr);
+		handle->proc = NULL;
+		handle->param = NULL;
+		return NULL;
+	}
+	
+	if (pthread_attr_destroy(&attr) != 0) {
+		ShowWarning("thread_create_opt: pthread_attr_destroy failed.\n");
+	}
 #endif
 
 	thread->prio_set(handle,  prio);
@@ -234,12 +252,17 @@ static void thread_destroy(struct thread_handle *handle)
 		thread_terminated(handle);
 	}
 #else
-	if (pthread_cancel(handle->hThread) == 0) {
+	int ret = pthread_cancel(handle->hThread);
+	if (ret == 0) {
 		// We have to join it, otherwise pthread wont re-cycle its internal resources assoc. with this thread.
-		pthread_join(handle->hThread, NULL);
+		if (pthread_join(handle->hThread, NULL) != 0) {
+			ShowWarning("thread_destroy: pthread_join failed.\n");
+		}
 
 		// Tell our manager to release resources ;)
 		thread_terminated(handle);
+	} else {
+		ShowWarning("thread_destroy: pthread_cancel failed with error %d.\n", ret);
 	}
 #endif
 }
@@ -294,8 +317,10 @@ static bool thread_wait(struct thread_handle *handle, void **out_exit_code)
 	WaitForSingleObject(handle->hThread, INFINITE);
 	return true;
 #else
-	if (pthread_join(handle->hThread, out_exit_code) == 0)
+	int ret = pthread_join(handle->hThread, out_exit_code);
+	if (ret == 0)
 		return true;
+	ShowWarning("thread_wait: pthread_join failed with error %d.\n", ret);
 	return false;
 #endif
 

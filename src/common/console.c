@@ -556,10 +556,22 @@ static void console_parse_init(void)
 	InitializeSpinLock(console->input->ptlock);
 
 	console->input->ptmutex = mutex->create();
+	if (console->input->ptmutex == NULL) {
+		ShowFatalError("console_parse_init: failed to create mutex.\n");
+		exit(EXIT_FAILURE);
+	}
+	
 	console->input->ptcond = mutex->cond_create();
+	if (console->input->ptcond == NULL) {
+		ShowFatalError("console_parse_init: failed to create condition variable.\n");
+		mutex->destroy(console->input->ptmutex);
+		exit(EXIT_FAILURE);
+	}
 
 	if( (console->input->pthread = thread->create(console->input->pthread_main, NULL)) == NULL ){
 		ShowFatalError("console_parse_init: failed to spawn console_parse thread.\n");
+		mutex->cond_destroy(console->input->ptcond);
+		mutex->destroy(console->input->ptmutex);
 		exit(EXIT_FAILURE);
 	}
 

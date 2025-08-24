@@ -76,7 +76,12 @@ static struct mutex_data *mutex_create(void)
 #ifdef WIN32
 	InitializeCriticalSection(&m->hMutex);
 #else
-	pthread_mutex_init(&m->hMutex, NULL);
+	int ret = pthread_mutex_init(&m->hMutex, NULL);
+	if (ret != 0) {
+		ShowFatalError("ramutex_create: pthread_mutex_init failed with error %d.\n", ret);
+		aFree(m);
+		return NULL;
+	}
 #endif
 
 	return m;
@@ -89,7 +94,10 @@ static void mutex_destroy(struct mutex_data *m)
 #ifdef WIN32
 	DeleteCriticalSection(&m->hMutex);
 #else
-	pthread_mutex_destroy(&m->hMutex);
+	int ret = pthread_mutex_destroy(&m->hMutex);
+	if (ret != 0) {
+		ShowFatalError("ramutex_destroy: pthread_mutex_destroy failed with error %d.\n", ret);
+	}
 #endif
 
 	aFree(m);
@@ -102,7 +110,10 @@ static void mutex_lock(struct mutex_data *m)
 #ifdef WIN32
 	EnterCriticalSection(&m->hMutex);
 #else
-	pthread_mutex_lock(&m->hMutex);
+	int ret = pthread_mutex_lock(&m->hMutex);
+	if (ret != 0) {
+		ShowFatalError("ramutex_lock: pthread_mutex_lock failed with error %d.\n", ret);
+	}
 #endif
 }
 
@@ -114,8 +125,12 @@ static bool mutex_trylock(struct mutex_data *m)
 	if (TryEnterCriticalSection(&m->hMutex) != FALSE)
 		return true;
 #else
-	if (pthread_mutex_trylock(&m->hMutex) == 0)
+	int ret = pthread_mutex_trylock(&m->hMutex);
+	if (ret == 0)
 		return true;
+	else if (ret != EBUSY) {
+		ShowFatalError("ramutex_trylock: pthread_mutex_trylock failed with error %d.\n", ret);
+	}
 #endif
 	return false;
 }
@@ -127,7 +142,10 @@ static void mutex_unlock(struct mutex_data *m)
 #ifdef WIN32
 	LeaveCriticalSection(&m->hMutex);
 #else
-	pthread_mutex_unlock(&m->hMutex);
+	int ret = pthread_mutex_unlock(&m->hMutex);
+	if (ret != 0) {
+		ShowFatalError("ramutex_unlock: pthread_mutex_unlock failed with error %d.\n", ret);
+	}
 #endif
 }
 
@@ -148,7 +166,12 @@ static struct cond_data *cond_create(void)
 	c->events[EVENT_COND_BROADCAST] = CreateEvent(NULL, TRUE,  FALSE, NULL);
 	InitializeCriticalSection( &c->waiters_lock );
 #else
-	pthread_cond_init(&c->hCond, NULL);
+	int ret = pthread_cond_init(&c->hCond, NULL);
+	if (ret != 0) {
+		ShowFatalError("racond_create: pthread_cond_init failed with error %d.\n", ret);
+		aFree(c);
+		return NULL;
+	}
 #endif
 
 	return c;
@@ -163,7 +186,10 @@ static void cond_destroy(struct cond_data *c)
 	CloseHandle(c->events[EVENT_COND_BROADCAST]);
 	DeleteCriticalSection(&c->waiters_lock);
 #else
-	pthread_cond_destroy(&c->hCond);
+	int ret = pthread_cond_destroy(&c->hCond);
+	if (ret != 0) {
+		ShowFatalError("racond_destroy: pthread_cond_destroy failed with error %d.\n", ret);
+	}
 #endif
 
 	aFree(c);
@@ -210,7 +236,10 @@ static void cond_wait(struct cond_data *c, struct mutex_data *m, sysint timeout_
 #else
 	nullpo_retv(m);
 	if (timeout_ticks < 0) {
-		pthread_cond_wait(&c->hCond,  &m->hMutex);
+		int ret = pthread_cond_wait(&c->hCond, &m->hMutex);
+		if (ret != 0) {
+			ShowFatalError("racond_wait: pthread_cond_wait failed with error %d.\n", ret);
+		}
 	} else {
 		struct timespec wtime;
 		int64 exact_timeout = timer->gettick() + timeout_ticks;
@@ -218,7 +247,10 @@ static void cond_wait(struct cond_data *c, struct mutex_data *m, sysint timeout_
 		wtime.tv_sec = exact_timeout/1000;
 		wtime.tv_nsec = (exact_timeout%1000)*1000000;
 
-		pthread_cond_timedwait( &c->hCond,  &m->hMutex,  &wtime);
+		int ret = pthread_cond_timedwait(&c->hCond, &m->hMutex, &wtime);
+		if (ret != 0 && ret != ETIMEDOUT) {
+			ShowFatalError("racond_wait: pthread_cond_timedwait failed with error %d.\n", ret);
+		}
 	}
 #endif
 }
@@ -240,7 +272,10 @@ static void cond_signal(struct cond_data *c)
 		SetEvent(c->events[EVENT_COND_SIGNAL]);
 #else
 	nullpo_retv(c);
-	pthread_cond_signal(&c->hCond);
+	int ret = pthread_cond_signal(&c->hCond);
+	if (ret != 0) {
+		ShowFatalError("racond_signal: pthread_cond_signal failed with error %d.\n", ret);
+	}
 #endif
 }
 
@@ -261,7 +296,10 @@ static void cond_broadcast(struct cond_data *c)
 		SetEvent(c->events[EVENT_COND_BROADCAST]);
 #else
 	nullpo_retv(c);
-	pthread_cond_broadcast(&c->hCond);
+	int ret = pthread_cond_broadcast(&c->hCond);
+	if (ret != 0) {
+		ShowFatalError("racond_broadcast: pthread_cond_broadcast failed with error %d.\n", ret);
+	}
 #endif
 }
 

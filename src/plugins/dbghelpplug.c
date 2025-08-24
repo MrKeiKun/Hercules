@@ -336,16 +336,23 @@ Dhp__PrintModuleInfoCallback(
 		FILE* log_file = (FILE*)data;
 		MINIDUMP_MODULE_CALLBACK module = callback_input->Module;
 
-		fprintf(log_file, "0x%p", module.BaseOfImage);
+		if (fprintf(log_file, "0x%p", module.BaseOfImage) < 0) {
+			// Can't use ShowError here as we're in a callback, but we can continue
+			return TRUE;
+		}
 
-		fprintf(log_file, "  %ws", module.FullPath, log_file);
+		if (fprintf(log_file, "  %ws", module.FullPath, log_file) < 0) {
+			return TRUE;
+		}
 
-		fprintf(log_file, "  (%d.%d.%d.%d, %d bytes)\n",
+		if (fprintf(log_file, "  (%d.%d.%d.%d, %d bytes)\n",
 			HIWORD(module.VersionInfo.dwFileVersionMS),
 			LOWORD(module.VersionInfo.dwFileVersionMS),
 			HIWORD(module.VersionInfo.dwFileVersionLS),
 			LOWORD(module.VersionInfo.dwFileVersionLS),
-			module.SizeOfImage);
+			module.SizeOfImage) < 0) {
+			return TRUE;
+		}
 	}
 
 	return TRUE;
@@ -365,34 +372,40 @@ Dhp__PrintProcessInfo(
 {
 	LPSTR cmd_line;
 
-	fprintf(log_file,
-		"\nProcess information:\n");
+	if (fprintf(log_file, "\nProcess information:\n") < 0) {
+		return; // Can't continue if we can't write to the log
+	}
 
 	// print the command line
 	cmd_line = GetCommandLineA();
-	if( cmd_line )
-	fprintf(log_file,
-		"Command line: %s\n",
-		cmd_line);
+	if( cmd_line ) {
+		if (fprintf(log_file, "Command line: %s\n", cmd_line) < 0) {
+			return;
+		}
+	}
 
 	// Print system information
 	if( sysinfo ) {
-		fprintf(log_file,
+		if (fprintf(log_file,
 			"Platform: %s\n CPU: %s\nApplication architecture: %s\nCompiler: %s\n%s: %s\n",
 			sysinfo->osversion(), sysinfo->cpu(), (sysinfo->is64bit())?"x64":"x86",
-			sysinfo->compiler(), sysinfo->vcstype(), sysinfo->vcsrevision_src());
+			sysinfo->compiler(), sysinfo->vcstype(), sysinfo->vcsrevision_src()) < 0) {
+			return;
+		}
 	}
 
 	// print the exception code
 	if( exception )
 	{
-		fprintf(log_file,
+		if (fprintf(log_file,
 			"\nException:\n"
 			"0x%x",
-			exception->ExceptionCode);
+			exception->ExceptionCode) < 0) {
+			return;
+		}
 		switch( exception->ExceptionCode )
 		{
-#define PRINT(x) case x: fprintf(log_file, " "#x); break
+#define PRINT(x) case x: if (fprintf(log_file, " "#x) < 0) return; break
 		PRINT(EXCEPTION_ACCESS_VIOLATION);
 		PRINT(EXCEPTION_DATATYPE_MISALIGNMENT);
 		PRINT(EXCEPTION_BREAKPOINT);
@@ -419,31 +432,42 @@ Dhp__PrintProcessInfo(
 		}
 
 		// print where the fault occured
-		fprintf(log_file, " at location 0x%p", exception->ExceptionAddress);
+		if (fprintf(log_file, " at location 0x%p", exception->ExceptionAddress) < 0) {
+			return;
+		}
 
 		// if the exception was an access violation, print additional information
-		if( exception->ExceptionCode == EXCEPTION_ACCESS_VIOLATION && exception->NumberParameters >= 2 )
-			fprintf(log_file, " %s location 0x%p", exception->ExceptionInformation[0] ? "writing to" : "reading from", exception->ExceptionInformation[1]);
+		if( exception->ExceptionCode == EXCEPTION_ACCESS_VIOLATION && exception->NumberParameters >= 2 ) {
+			if (fprintf(log_file, " %s location 0x%p", exception->ExceptionInformation[0] ? "writing to" : "reading from", exception->ExceptionInformation[1]) < 0) {
+				return;
+			}
+		}
 
-		fprintf(log_file, "\n");
+		if (fprintf(log_file, "\n") < 0) {
+			return;
+		}
 	}
 
 	// print the register info
 	if( context )
 	{
 #if defined(_M_IX86)
-		fprintf(log_file,
-			"\nRegisters:\n");
+		if (fprintf(log_file,
+			"\nRegisters:\n") < 0) {
+			return;
+		}
 		if( context->ContextFlags & CONTEXT_INTEGER )
 		{
-			fprintf(log_file,
+			if (fprintf(log_file,
 				"eax=%08x ebx=%08x ecx=%08x edx=%08x esi=%08x edi=%08x\n",
 				context->Eax, context->Ebx, context->Ecx,
-				context->Edx, context->Esi, context->Edi);
+				context->Edx, context->Esi, context->Edi) < 0) {
+				return;
+			}
 		}
 		if( context->ContextFlags & CONTEXT_CONTROL )
 		{
-			fprintf(log_file,
+			if (fprintf(log_file,
 				"eip=%08x esp=%08x ebp=%08x iopl=%1x %s %s %s %s %s %s %s %s %s %s\n",
 				context->Eip, context->Esp, context->Ebp,
 				(context->EFlags >> 12) & 3,                    //  IOPL level value
@@ -456,28 +480,38 @@ Dhp__PrintProcessInfo(
 				(context->EFlags & 0x00000040) ? "zr"  : "nz",  //  ZF (zero flag)
 				(context->EFlags & 0x00000010) ? "ac"  : "na",  //  AF (aux carry flag)
 				(context->EFlags & 0x00000004) ? "po"  : "pe",  //  PF (parity flag)
-				(context->EFlags & 0x00000001) ? "cy"  : "nc"); //  CF (carry flag)
+				(context->EFlags & 0x00000001) ? "cy"  : "nc") < 0) {
+				return;
+			}
 		}
 		if( context->ContextFlags & CONTEXT_SEGMENTS )
 		{
-			fprintf(log_file,
+			if (fprintf(log_file,
 				"cs=%04x  ss=%04x  ds=%04x  es=%04x  fs=%04x  gs=%04x",
 				context->SegCs,
 				context->SegSs,
 				context->SegDs,
 				context->SegEs,
 				context->SegFs,
-				context->SegGs);
+				context->SegGs) < 0) {
+				return;
+			}
 			if( context->ContextFlags & CONTEXT_CONTROL )
-				fprintf(log_file,
+				if (fprintf(log_file,
 					"             efl=%08x",
-					context->EFlags);
-			fprintf(log_file, "\n");
+					context->EFlags) < 0) {
+					return;
+				}
+			if (fprintf(log_file, "\n") < 0) {
+				return;
+			}
 		}
 		else if( context->ContextFlags & CONTEXT_CONTROL )
-			fprintf(log_file,
+			if (fprintf(log_file,
 					"                                                                       efl=%08x\n",
-					context->EFlags);
+					context->EFlags) < 0) {
+				return;
+			}
 #else /* defined(_M_IX86) */
 		//TODO add more processors
 #endif
@@ -507,8 +541,11 @@ Dhp__PrintTypeName(
 	hProcess = interData->hProcess;
 	modBase  = interData->modBase;
 
-	if( withParens )
-		fprintf(log_file, "(");
+	if( withParens ) {
+		if (fprintf(log_file, "(") < 0) {
+			return;
+		}
+	}
 
 	switch( symtag )
 	{
@@ -518,11 +555,17 @@ Dhp__PrintTypeName(
 
 			if( SymGetTypeInfo_(hProcess, modBase, typeIndex, TI_GET_SYMNAME, &pwszTypeName) )
 			{
-				fprintf(log_file, "enum %ls", pwszTypeName);
+				if (fprintf(log_file, "enum %ls", pwszTypeName) < 0) {
+					LocalFree(pwszTypeName);
+					return;
+				}
 				LocalFree(pwszTypeName);
 			}
-			else
-				fprintf(log_file, "enum <symname not found>");
+			else {
+				if (fprintf(log_file, "enum <symname not found>") < 0) {
+					return;
+				}
+			}
 		}
 		break;
 	case SymTagBaseType:
@@ -1785,7 +1828,7 @@ Dhp__UnhandledExceptionFilter(PEXCEPTION_POINTERS ptrs)
 	Dhp__UnloadDbghlpDll();
 
 	// inform the user
-	fprintf(stderr,
+	if (fprintf(stderr,
 		"\n"
 		"This application has halted due to an unexpected error.\n"
 		"A crash report and minidump file were saved to disk, you can find them here:\n"
@@ -1796,7 +1839,10 @@ Dhp__UnhandledExceptionFilter(PEXCEPTION_POINTERS ptrs)
 		"NOTE: The crash report and minidump files can contain sensitive information\n"
 		"(filenames, partial file content, usernames and passwords etc.)\n",
 		szLogFileName,
-		szDmpFileName);
+		szDmpFileName) < 0) {
+		// Can't do much if we can't write to stderr during a crash
+		// Just continue with termination
+	}
 
 	// terminate the application
 	return EXCEPTION_EXECUTE_HANDLER;
