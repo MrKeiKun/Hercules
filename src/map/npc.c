@@ -4568,6 +4568,21 @@ static int npc_do_atcmd_event(struct map_session_data *sd, const char *command, 
 }
 
 /**
+ * Timer function to safely free a script_code after a delay.
+ * This prevents crashes when user functions are reloaded while still executing.
+ */
+static int npc_free_script_timer(int tid, int64 tick, int id, intptr_t data)
+{
+	struct script_code *script = (struct script_code *)data;
+	if (script) {
+		script->free_vars(script->local.vars);
+		VECTOR_CLEAR(script->script_buf);
+		aFree(script);
+	}
+	return 0;
+}
+
+/**
  * Parses a function.
  *
  * Example:
@@ -4632,9 +4647,8 @@ static const char *npc_parse_function(const char *w1, const char *w2, const char
 	if (func_db->put(func_db, DB->str2key(w3), DB->ptr2data(scriptroot), &old_data)) {
 		struct script_code *oldscript = (struct script_code*)DB->data2ptr(&old_data);
 		ShowWarning("npc_parse_function: Overwriting user function [%s] in file '%s', line '%d'.\n", w3, filepath, strline(buffer,start-buffer));
-		script->free_vars(oldscript->local.vars);
-		VECTOR_CLEAR(oldscript->script_buf);
-		aFree(oldscript);
+		// Defer freeing to avoid crashes if script is currently executing
+		timer->add(timer->gettick() + 1000, npc_free_script_timer, 0, (intptr_t)oldscript);
 	}
 
 	return end;
@@ -6043,6 +6057,7 @@ static int do_init_npc(bool minimal)
 
 		timer->add_func_list(npc->event_do_clock,"npc_event_do_clock");
 		timer->add_func_list(npc->timerevent,"npc_timerevent");
+		timer->add_func_list(npc_free_script_timer,"npc_free_script_timer");
 	}
 
 	// Init dummy NPC
