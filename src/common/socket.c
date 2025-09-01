@@ -960,6 +960,8 @@ static void wfifohead(int fd, size_t len)
 	sockt->session[fd]->last_head_size = (uint32)len;
 	if (sockt->session[fd]->wdata_size + len > sockt->session[fd]->max_wdata)
 		sockt->realloc_writefifo(fd, len);
+	if (len > 0)
+		memset(sockt->session[fd]->wdata + sockt->session[fd]->wdata_size, 0, len);
 }
 
 static int do_sockets(int next)
