@@ -41,6 +41,219 @@ m4_ifdef([AC_USE_SYSTEM_EXTENSIONS],
 	[AC_USE_SYSTEM_EXTENSIONS]
 )
 
+# ===========================================================================
+#        https://www.gnu.org/software/autoconf-archive/ax_pthread.html
+# ===========================================================================
+#serial 25
+
+AU_ALIAS([ACX_PTHREAD], [AX_PTHREAD])
+AC_DEFUN([AX_PTHREAD], [
+AC_REQUIRE([AC_CANONICAL_HOST])
+AC_REQUIRE([AC_PROG_CC])
+AC_REQUIRE([AC_PROG_SED])
+AC_LANG_PUSH([C])
+ax_pthread_ok=no
+
+# We used to check for pthread.h first, but this fails if pthread.h
+# requires special compiler flags (e.g. on Tru64 or Sequent).
+# It gets checked for in the link test anyway.
+
+# First of all, check if the user has set any of the PTHREAD_LIBS,
+# etcetera environment variables, and save those values for later
+# reinstate.
+ax_pthread_save_CC="$CC"
+ax_pthread_save_CFLAGS="$CFLAGS"
+ax_pthread_save_LIBS="$LIBS"
+ax_pthread_save_LDFLAGS="$LDFLAGS"
+ax_pthread_save_CPPFLAGS="$CPPFLAGS"
+# Check for the user-defined PTHREAD_CFLAGS, PTHREAD_CPPFLAGS, etc.
+AS_IF([test "x$PTHREAD_CFLAGS" != "x"], [
+  ax_pthread_save_CFLAGS="$ax_pthread_save_CFLAGS $PTHREAD_CFLAGS"
+])
+AS_IF([test "x$PTHREAD_CPPFLAGS" != "x"], [
+  ax_pthread_save_CPPFLAGS="$ax_pthread_save_CPPFLAGS $PTHREAD_CPPFLAGS"
+])
+AS_IF([test "x$PTHREAD_LDFLAGS" != "x"], [
+  ax_pthread_save_LDFLAGS="$ax_pthread_save_LDFLAGS $PTHREAD_LDFLAGS"
+])
+AS_IF([test "x$PTHREAD_LIBS" != "x"], [
+  ax_pthread_save_LIBS="$ax_pthread_save_LIBS $PTHREAD_LIBS"
+])
+
+# Also save the build environment variables.
+ax_pthread_save_BUILD_CFLAGS="$BUILD_CFLAGS"
+ax_pthread_save_BUILD_CPPFLAGS="$BUILD_CPPFLAGS"
+ax_pthread_save_BUILD_LDFLAGS="$BUILD_LDFLAGS"
+ax_pthread_save_BUILD_LIBS="$BUILD_LIBS"
+
+# Set the default flags and libs. We don't know what platform we're on
+# so we can't set them to something specific yet.
+ax_pthread_pthread_flags=""
+ax_pthread_pthread_libs=""
+
+# Set the default behavior for PTHREAD_CC. If the user has set PTHREAD_CC
+# already, we respect that.
+AS_IF([test "x$PTHREAD_CC" = "x"], [
+  PTHREAD_CC="$ax_pthread_save_CC"
+])
+
+# Let's try to find the PTHREAD_CC first.
+AS_IF([test "x$ax_pthread_ok" = "xno"], [
+  for ax_pthread_try_cc in $PTHREAD_CC "" gcc clang icc xlc cc_r; do
+    AS_IF([test "x$ax_pthread_try_cc" != "x"], [
+      PTHREAD_CC="$ax_pthread_try_cc"
+      AC_MSG_CHECKING([for $ax_pthread_try_cc option to accept POSIX threads])
+    ], [
+      AC_MSG_CHECKING([for POSIX threads without any special compiler])
+    ])
+    AS_CASE([$host],
+      [*-*-aix*], [
+        AS_IF([test "x$ax_pthread_try_cc" = "x"], [
+          PTHREAD_CC="xlc_r"
+        ], [
+          AS_IF([test "x$ax_pthread_try_cc" = "xlc"], [
+            PTHREAD_CC="xlc_r"
+          ])
+        ])
+      ],
+      [*-*-freebsd*], [
+        AS_IF([test "x$ax_pthread_try_cc" = "x"], [
+          PTHREAD_CC="cc"
+        ])
+      ],
+      [*-*-darwin*], [
+        AS_IF([test "x$ax_pthread_try_cc" = "x"], [
+          PTHREAD_CC="cc"
+        ])
+      ],
+      [*-*-netbsd*], [
+        AS_IF([test "x$ax_pthread_try_cc" = "x"], [
+          PTHREAD_CC="cc"
+        ])
+      ],
+      [*-*-openbsd*], [
+        AS_IF([test "x$ax_pthread_try_cc" = "x"], [
+          PTHREAD_CC="cc"
+        ])
+      ],
+      [*-*-solaris*], [
+        AS_IF([test "x$ax_pthread_try_cc" = "x"], [
+          PTHREAD_CC="cc"
+        ])
+      ],
+      [*-*-hpux*], [
+        AS_IF([test "x$ax_pthread_try_cc" = "x"], [
+          PTHREAD_CC="cc"
+        ])
+      ]
+    )
+    AS_IF([test "x$ax_pthread_try_cc" != "x"], [
+      ax_pthread_save_CC="$CC"
+      CC="$PTHREAD_CC"
+    ])
+
+    # Let's try to find the PTHREAD_CFLAGS and PTHREAD_LIBS.
+    for ax_pthread_try_flags in '' '-pthread' '-pthreads' '-mthreads' '-thread' '-threads' '-mt' '-lpthread' '-lpthreads' '-mt,pthread' '-lpthread,pthread' '-mt,pthreads' '-lpthread,pthreads'; do
+      AS_IF([test "x$ax_pthread_ok" = "xno"], [
+        CFLAGS="$ax_pthread_save_CFLAGS $ax_pthread_try_flags"
+        CPPFLAGS="$ax_pthread_save_CPPFLAGS $ax_pthread_try_flags"
+        LDFLAGS="$ax_pthread_save_LDFLAGS $ax_pthread_try_flags"
+        LIBS="$ax_pthread_save_LIBS $ax_pthread_pthread_libs"
+        AC_LINK_IFELSE([AC_LANG_CALL([], [pthread_create])], [
+          ax_pthread_ok=yes
+          ax_pthread_pthread_flags="$ax_pthread_try_flags"
+          ax_pthread_pthread_libs=""
+        ], [
+          # Let's try with -lpthread
+          LIBS="$ax_pthread_save_LIBS $ax_pthread_pthread_libs -lpthread"
+          AC_LINK_IFELSE([AC_LANG_CALL([], [pthread_create])], [
+            ax_pthread_ok=yes
+            ax_pthread_pthread_flags="$ax_pthread_try_flags"
+            ax_pthread_pthread_libs="-lpthread"
+          ])
+        ])
+      ])
+    done
+
+    AS_IF([test "x$ax_pthread_ok" = "xyes"], [
+      break
+    ])
+
+    AS_IF([test "x$ax_pthread_try_cc" != "x"], [
+      CC="$ax_pthread_save_CC"
+    ])
+  done
+])
+
+AS_IF([test "x$ax_pthread_ok" = "xno"], [
+  ax_pthread_ok=no
+])
+
+# Restore the CC
+CC="$ax_pthread_save_CC"
+
+# Set the results
+AS_IF([test "x$ax_pthread_ok" = "xyes"], [
+  PTHREAD_CFLAGS="$ax_pthread_pthread_flags"
+  PTHREAD_CPPFLAGS="$ax_pthread_pthread_flags"
+  PTHREAD_LDFLAGS="$ax_pthread_pthread_flags"
+  PTHREAD_LIBS="$ax_pthread_pthread_libs"
+  AC_SUBST([PTHREAD_CFLAGS])
+  AC_SUBST([PTHREAD_CPPFLAGS])
+  AC_SUBST([PTHREAD_LDFLAGS])
+  AC_SUBST([PTHREAD_LIBS])
+  AC_DEFINE([HAVE_PTHREAD], [1], [Define if you have POSIX threads libraries and header files.])
+  # Also check for PTHREAD_PRIO_INHERIT
+  ax_pthread_save_CFLAGS="$CFLAGS"
+  ax_pthread_save_CPPFLAGS="$CPPFLAGS"
+  ax_pthread_save_LDFLAGS="$LDFLAGS"
+  ax_pthread_save_LIBS="$LIBS"
+  CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
+  CPPFLAGS="$CPPFLAGS $PTHREAD_CPPFLAGS"
+  LDFLAGS="$LDFLAGS $PTHREAD_LDFLAGS"
+  LIBS="$LIBS $PTHREAD_LIBS"
+  AC_CHECK_DECL([PTHREAD_PRIO_INHERIT], [
+    AC_DEFINE([HAVE_PTHREAD_PRIO_INHERIT], [1], [Define if you have PTHREAD_PRIO_INHERIT.])
+  ], [], [
+    #include <pthread.h>
+  ])
+  CFLAGS="$ax_pthread_save_CFLAGS"
+  CPPFLAGS="$ax_pthread_save_CPPFLAGS"
+  LDFLAGS="$ax_pthread_save_LDFLAGS"
+  LIBS="$ax_pthread_save_LIBS"
+])
+
+# Restore the build environment variables.
+CFLAGS="$ax_pthread_save_CFLAGS"
+CPPFLAGS="$ax_pthread_save_CPPFLAGS"
+LDFLAGS="$ax_pthread_save_LDFLAGS"
+LIBS="$ax_pthread_save_LIBS"
+BUILD_CFLAGS="$ax_pthread_save_BUILD_CFLAGS"
+BUILD_CPPFLAGS="$ax_pthread_save_BUILD_CPPFLAGS"
+BUILD_LDFLAGS="$ax_pthread_save_BUILD_LDFLAGS"
+BUILD_LIBS="$ax_pthread_save_BUILD_LIBS"
+
+AC_LANG_POP([C])
+
+# Execute the actions
+AS_IF([test "x$ax_pthread_ok" = "xyes"], [
+  AC_MSG_RESULT([yes])
+  m4_if([$1], [], [
+    :
+  ], [
+    $1
+  ])
+], [
+  AC_MSG_RESULT([no])
+  m4_if([$2], [], [
+    :
+  ], [
+    $2
+  ])
+])
+
+])dnl AX_PTHREAD
+
 AC_MSG_CHECKING([host OS])
 host_os="`uname`"
 AC_MSG_RESULT([$host_os])
@@ -2003,19 +2216,15 @@ fi
 #
 # pthread
 #
-case "${host}" in
-	*-*-mingw*)
-		;;
-	*)
-		AC_SEARCH_LIBS([pthread_create], [pthread], [], [AC_MSG_ERROR([pthread library not found or incompatible])])
-		AC_SEARCH_LIBS([pthread_sigmask], [pthread], [], [AC_MSG_ERROR([pthread library not found or incompatible])])
-		AC_SEARCH_LIBS([pthread_attr_init], [pthread], [], [AC_MSG_ERROR([pthread library not found or incompatible])])
-		AC_SEARCH_LIBS([pthread_attr_setstacksize], [pthread], [], [AC_MSG_ERROR([pthread library not found or incompatible])])
-		AC_SEARCH_LIBS([pthread_attr_destroy], [pthread], [], [AC_MSG_ERROR([pthread library not found or incompatible])])
-		AC_SEARCH_LIBS([pthread_cancel], [pthread], [], [AC_MSG_ERROR([pthread library not found or incompatible])])
-		AC_SEARCH_LIBS([pthread_join], [pthread], [], [AC_MSG_ERROR([pthread library not found or incompatible])])
-		;;
-esac
+AX_PTHREAD([
+	LIBS="$PTHREAD_LIBS $LIBS"
+	CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
+	CPPFLAGS="$CPPFLAGS $PTHREAD_CPPFLAGS"
+	LDFLAGS="$LDFLAGS $PTHREAD_LDFLAGS"
+	CC="$PTHREAD_CC"
+], [
+	AC_MSG_ERROR([pthread library not found or incompatible])
+])
 
 # execinfo (backtrace)
 AC_CHECK_HEADERS([execinfo.h],
