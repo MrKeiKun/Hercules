@@ -6251,6 +6251,7 @@ static void battle_reflect_damage(struct block_list *target, struct block_list *
 				if( sc->data[SC_REFLECTSHIELD] && skill_id != WS_CARTTERMINATION && skill_id != GS_DESPERADO
 				  && !(d_bl && !(wd->flag&BF_SKILL)) // It should not be a basic attack if the target is under devotion
 				  && !(d_bl && sce_d && !check_distance_bl(target, d_bl, sce_d->val3)) // It should not be out of range if the target is under devotion
+				  && (!sc->data[SC_AUTOGUARD] || battle_config.reflect_shield_autoguard_damage)
 				) {
 
 					NORMALIZE_RDAMAGE(damage * sc->data[SC_REFLECTSHIELD]->val2 / 100);
@@ -7614,6 +7615,7 @@ static const struct config_data_old battle_data[] = {
 	{ "gx_allhit",                          &battle_config.gx_allhit,                       0,      0,      1,              },
 	{ "gx_disptype",                        &battle_config.gx_disptype,                     1,      0,      1,              },
 	{ "devotion_level_difference",          &battle_config.devotion_level_difference,       10,     0,      INT_MAX,        },
+	{ "reflect_shield_autoguard_damage",    &battle_config.reflect_shield_autoguard_damage, 0,      0,      INT_MAX,        },
 	{ "player_skill_partner_check",         &battle_config.player_skill_partner_check,      1,      0,      1,              },
 	{ "invite_request_check",               &battle_config.invite_request_check,            1,      0,      1,              },
 	{ "skill_removetrap_type",              &battle_config.skill_removetrap_type,           0,      0,      1,              },

@@ -349,6 +349,7 @@ struct Battle_Config {
 	int gx_allhit;
 	int gx_disptype;
 	int devotion_level_difference;
+	int reflect_shield_autoguard_damage;
 	int player_skill_partner_check;
 	int invite_request_check;
 	int skill_removetrap_type;
