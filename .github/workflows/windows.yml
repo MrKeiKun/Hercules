@@ -14,7 +14,7 @@ jobs:
     timeout-minutes: 30
     strategy:
       matrix:
-        CC: [msbuild]
+        CC: ['15.0', '16.0', '17.0']
         RENEWAL: ["", "DISABLE_RENEWAL"]
         CLIENT_TYPE: ["", "ENABLE_PACKETVER_RE", "ENABLE_PACKETVER_ZERO"]
         PACKET_VERSION: ["PACKETVER=20221024", "PACKETVER=20130724"]
@@ -25,7 +25,7 @@ jobs:
     # github.head_ref will stop previous runs in the same PR (if in a PR)
     # github.run_id is a fallback when outside a PR (e.g. every merge in master will run, and previous won't stop)
     concurrency:
-      group: msbuild-${{ github.head_ref || github.run_id }}_${{ matrix.CC }}_${{ matrix.RENEWAL }}_${{ matrix.CLIENT_TYPE }}_${{ matrix.PACKET_VERSION}}
+      group: msbuild-${{ github.head_ref || github.run_id }}_VisualStudio-${{ matrix.CC }}_${{ matrix.RENEWAL }}_${{ matrix.CLIENT_TYPE }}_${{ matrix.PACKET_VERSION }}
       cancel-in-progress: true
 
     steps:
@@ -35,6 +35,8 @@ jobs:
 
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v2
+        with:
+          vs-version: ${{ matrix.CC }}
 
       - uses: shogo82148/actions-setup-mysql@v1
         with:
