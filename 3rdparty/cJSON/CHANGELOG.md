@@ -1,3 +1,49 @@
+1.7.18 (May 13, 2024)
+======
+Fixes:
+------
+* Add NULL check to cJSON_SetValuestring()(CVE-2024-31755), see #839 and #840
+* Remove non-functional list handling of compiler flags, see #851
+* Fix heap buffer overflow, see #852
+* remove misused optimization flag -01, see #854
+* Set free'd pointers to NULL whenever they are not reassigned immediately after, see #855 and #833
+
+1.7.17 (Dec 26, 2023)
+======
+Fixes:
+------
+* Fix null reference in cJSON_SetValuestring(CVE-2023-50472), see #809
+* Fix null reference in cJSON_InsertItemInArray(CVE-2023-50471), see #809 and #810
+
+1.7.16 (Jul 5, 2023)
+======
+Features:
+------
+* Add an option for ENABLE_CJSON_VERSION_SO in CMakeLists.txt, see #534
+* Add cmake_policy to CMakeLists.txt, see #163
+* Add cJSON_SetBoolValue, see #639
+* Add meson documentation, see #761
+
+Fixes:
+------
+* Fix memory leak in merge_patch, see #611
+* Fix conflicting target names 'uninstall', see #617
+* Bump cmake version to 3.0 and use new version syntax, see #587
+* Print int without decimal places, see #630
+* Fix 'cjson_utils-static' target not exist, see #625
+* Add allocate check for replace_item_in_object, see #675
+* Fix a null pointer crash in cJSON_ReplaceItemViaPointer, see #726
+
+1.7.15 (Aug 25, 2021)
+======
+Fixes:
+------
+* Fix potential core dumped for strrchr, see [#546](https://github.com/DaveGamble/cJSON/pull/546)
+* Fix null pointer crash in cJSON_CreateXxArray, see [#538](https://github.com/DaveGamble/cJSON/pull/538)
+* Fix several null pointer problems on allocation failure, see [#526](https://github.com/DaveGamble/cJSON/pull/526)
+* Fix a possible dereference of null pointer, see [#519](https://github.com/DaveGamble/cJSON/pull/519)
+* Fix windows build failure about defining nan, see [#518](https://github.com/DaveGamble/cJSON/pull/518)
+
 1.7.14 (Sep 3, 2020)
 ======
 Fixes:
