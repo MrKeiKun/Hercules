@@ -178,6 +178,7 @@ case "$MODE" in
 		else
 			echo "Skip validateinterfaces"
 		fi
+		autoreconf -fiv || aborterror "Autoreconf error."
 		./configure $@ || (cat config.log && aborterror "Configure error, aborting build.")
 		make -j3 || aborterror "Build failed."
 		make plugins -j3 || aborterror "Build failed."
@@ -185,6 +186,7 @@ case "$MODE" in
 		make test || aborterror "Build failed."
 		;;
 	buildhpm)
+		autoreconf -fiv || aborterror "Autoreconf error."
 		./configure $@ || (cat config.log && aborterror "Configure error, aborting build.")
 		cd tools/HPMHookGen
 		make

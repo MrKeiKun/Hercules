@@ -47,7 +47,7 @@ jobs:
           --health-timeout=2s
           --health-retries=3
     env:
-      INSTALL_PACKAGES: ${{ matrix.CC }} default-mysql-client libmariadb-dev-compat
+      INSTALL_PACKAGES: ${{ matrix.CC }} default-mysql-client libmariadb-dev-compat autoconf
       SQLHOST: mysql
       CC: ${{ matrix.CC }}
       CONFIGURE_FLAGS: CC=${{ matrix.CC }} --enable-debug --enable-Werror --enable-buildbot ${{ matrix.RENEWAL }} ${{ matrix.HTTPLIB }} ${{ matrix.CLIENT_TYPE }} ${{ matrix.SANITIZER }} ${{ matrix.PACKET_VERSION }}
