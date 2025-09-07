@@ -1,0 +1,19 @@
+name: "CodeQL Configuration"
+
+disable-default-queries: false
+
+queries:
+  - uses: security-and-quality
+  - uses: security-experimental
+
+paths-ignore:
+  - 3rdparty/
+  - tools/
+  - vcproj/
+  - Hercules.xcodeproj/
+
+paths:
+  - src/
+  - npc/
+  - conf/
+  - db/
