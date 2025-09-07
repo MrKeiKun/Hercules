@@ -2104,14 +2104,37 @@ AC_SUBST([MYSQL_VERSION])
 AC_SUBST([MYSQL_CFLAGS])
 AC_SUBST([MYSQL_LIBS])
 
-
 #
 # PCRE library (optional)
 #
+AC_MSG_CHECKING([for PCRE library])
+HAVE_PCRE_SUPPORT=no
 
-AC_MSG_CHECKING([PCRE library])
-AC_CHECK_HEADER([pcre.h], [], [AC_MSG_ERROR([PCRE header not found])])
-AC_SEARCH_LIBS([pcre_study], [pcre], [], AC_MSG_ERROR([PCRE not found or incompatible]))
+# First, try legacy PCRE
+AC_CHECK_HEADER([pcre.h], [
+    AC_SEARCH_LIBS([pcre_study], [pcre], [
+        AC_DEFINE([PCRE_SUPPORT], [1], [Define to 1 if PCRE is available])
+        AC_DEFINE([HAVE_PCRE], [1], [Define to 1 if legacy PCRE is available])
+        HAVE_PCRE_SUPPORT=yes
+    ])
+])
+
+# If legacy PCRE not found, try PCRE2
+if test "$HAVE_PCRE_SUPPORT" = "no"; then
+    AC_CHECK_HEADER([pcre2.h], [
+		AC_SEARCH_LIBS([pcre2_compile_8], [pcre2-8 pcre2-16 pcre2-32], [
+			AC_DEFINE([PCRE_SUPPORT], [1], [Define to 1 if PCRE is available])
+			AC_DEFINE([HAVE_PCRE2], [1], [Define to 1 if PCRE2 is available])
+			AC_DEFINE([PCRE2_CODE_UNIT_WIDTH], [8], [PCRE2 code unit width])
+			HAVE_PCRE_SUPPORT=yes
+		])
+    ])
+fi
+
+# Handle the case where neither is found
+if test "$HAVE_PCRE_SUPPORT" = "no"; then
+    AC_MSG_WARN([Building without PCRE support - some features may be disabled])
+fi
 
 #
 # static Support test
