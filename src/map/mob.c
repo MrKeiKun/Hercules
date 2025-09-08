@@ -4716,7 +4716,49 @@ static void mob_read_db_mvpdrops_sub(struct mob_db *entry, struct config_setting
 }
 
 /**
- * Processes the drops for a mob_db entry.
+	* Processes the Summon block for a mob_db entry.
+	*
+	* @param[in,out] entry The destination mob_db entry, already initialized
+	*                      (mob_id is expected to be already set).
+	* @param[in]     t     The libconfig entry.
+	*/
+static void mob_read_db_summon_sub(struct mob_db *entry, struct config_setting_t *t)
+{
+	struct config_setting_t *summon;
+	int i = 0;
+
+	nullpo_retv(entry);
+	while ((summon = libconfig->setting_get_elem(t, i))) {
+		const char *group_name = config_setting_name(summon);
+		int group_id;
+		int rate;
+
+		if (!script->get_constant(group_name, &group_id)) {
+			ShowWarning("mob_read_db: Unknown summon group '%s' for monster %d\n", group_name, entry->mob_id);
+			i++;
+			continue;
+		}
+
+		if (group_id < 0 || group_id >= MOBG_MAX_GROUP) {
+			ShowWarning("mob_read_db: Invalid summon group ID %d for monster %d\n", group_id, entry->mob_id);
+			i++;
+			continue;
+		}
+
+		rate = libconfig->setting_get_int(summon);
+		if (rate < 0 || rate > 1000000) {
+			ShowWarning("mob_read_db: Invalid summon rate %d for group '%s' in monster %d\n", rate, group_name, entry->mob_id);
+			i++;
+			continue;
+		}
+
+		entry->summonper[group_id] = rate;
+		i++;
+	}
+}
+
+/**
+	* Processes the drops for a mob_db entry.
  *
  * @param[in,out] entry The destination mob_db entry, already initialized
  *                      (mob_id, status.mode are expected to be already set).
@@ -5271,6 +5313,12 @@ static int mob_read_db_sub(struct config_setting_t *mobt, int n, const char *sou
 		}
 	}
 
+	if ((t = libconfig->setting_get_member(mobt, "Summon"))) {
+		if (config_setting_is_group(t)) {
+			mob->read_db_summon_sub(&md, t);
+		}
+	}
+
 	if (map->setting_lookup_const(mobt, "DamageTakenRate", &i32) && i32 >= 0) {
 		md.dmg_taken_rate = cap_value(i32, 1, INT_MAX);
 	} else if (!inherit) {
@@ -5411,108 +5459,6 @@ static void mob_mobavail_removal_notice(void)
 	}
 }
 
-static void mob_read_group_db(void)
-{
-	const char *filename[] = {
-		DBPATH"mob_group.conf",
-		"mob_group2.conf"
-	};
-
-	for (int i = 0; i < ARRAYLENGTH(filename); i++)
-		mob->read_group_db_libconfig(filename[i]);
-}
-
-static bool mob_read_group_db_libconfig(const char *filename)
-{
-	struct config_t mg_conf;
-	char filepath[512];
-
-	snprintf(filepath, sizeof(filepath), "%s/%s", map->db_path, filename);
-	if (libconfig->load_file(&mg_conf, filepath) == CONFIG_FALSE) {
-		ShowError("%s: can't read %s\n", __func__, filepath);
-		return false;
-	}
-
-	int i = 0;
-	int count = 0;
-	struct config_setting_t *it = NULL;
-
-	while ((it = libconfig->setting_get_elem(mg_conf.root, i++)) != NULL) {
-		if (mob->read_group_db_libconfig_sub(it, filepath))
-			++count;
-	}
-
-	libconfig->destroy(&mg_conf);
-	ShowStatus("Done reading '"CL_WHITE"%d"CL_RESET"' entries in '"CL_WHITE"%s"CL_RESET"'.\n", count, filepath);
-	return true;
-}
-
-static bool mob_read_group_db_libconfig_sub(struct config_setting_t *it, const char *source)
-{
-	nullpo_retr(false, it);
-	nullpo_retr(false, source);
-
-	const char *name = config_setting_name(it);
-	int group_id;
-
-	if (!script->get_constant(name, &group_id)) {
-		ShowWarning("%s: unknown monster group '%s' in \"%s\", skipping..\n", __func__, name, source);
-		return false;
-	}
-
-	if (!config_setting_is_list(it)) {
-		ShowWarning("%s: monster group '%s' in \"%s\" must be a list, skipping..\n", __func__, name, source);
-		return false;
-	}
-
-	if (!mob->read_group_db_libconfig_sub_group(it, group_id, source))
-		return false;
-
-	return true;
-}
-
-static bool mob_read_group_db_libconfig_sub_group(struct config_setting_t *it, enum mob_groups group_id, const char *source)
-{
-	nullpo_retr(false, it);
-	nullpo_retr(false, source);
-	Assert_retr(false, group_id >= 0 && group_id < MOBG_MAX_GROUP);
-
-	if (VECTOR_LENGTH(mob->mob_groups[group_id]) > 0) {
-		VECTOR_CLEAR(mob->mob_groups[group_id]);
-	}
-	VECTOR_INIT(mob->mob_groups[group_id]);
-
-	int i = 0;
-	struct config_setting_t *entry = NULL;
-
-	while ((entry = libconfig->setting_get_elem(it, i++)) != NULL) {
-		int class_ = 0;
-		const char *name = libconfig->setting_get_string_elem(entry, 0);
-
-		if (!script->get_constant(name, &class_)) {
-			ShowWarning("%s: Invalid monster '%s' in \"%s\", skipping..\n", __func__, name, source);
-			continue;
-		}
-
-		struct mob_db *m = mob->db(class_);
-		if (m == mob->dummy) {
-			ShowWarning("%s: Invalid monster '%s' in \"%s\", skipping..\n", __func__, name, source);
-			continue;
-		}
-
-		int rate = 0;
-		if (config_setting_is_list(entry))
-			rate = libconfig->setting_get_int_elem(entry, 1);
-		else
-			rate = 1;
-
-		VECTOR_ENSURE(mob->mob_groups[group_id], 1, 1);
-		VECTOR_PUSH(mob->mob_groups[group_id], class_);
-		m->summonper[group_id] = rate;
-	}
-
-	return true;
-}
 
 /*==========================================
  * processes one mob_chat_db entry [SnakeDrak]
@@ -5988,7 +5934,6 @@ static void mob_load(bool minimal)
 	mob->readdb();
 	mob->readskilldb();
 	mob->mobavail_removal_notice();
-	mob->read_group_db();
 	sv->readdb(map->db_path, DBPATH"mob_race2_db.txt", ',', 2, 20, -1, mob->readdb_race2);
 }
 
@@ -6313,6 +6258,7 @@ void mob_defaults(void)
 	mob->read_db_sub = mob_read_db_sub;
 	mob->read_db_drops_sub = mob_read_db_drops_sub;
 	mob->read_db_mvpdrops_sub = mob_read_db_mvpdrops_sub;
+	mob->read_db_summon_sub = mob_read_db_summon_sub;
 	mob->read_db_mode_sub = mob_read_db_mode_sub;
 	mob->read_db_drops_option = mob_read_db_drops_option;
 	mob->read_db_stats_sub = mob_read_db_stats_sub;
@@ -6334,8 +6280,4 @@ void mob_defaults(void)
 	mob->skill_db_libconfig = mob_skill_db_libconfig;
 	mob->skill_db_libconfig_sub = mob_skill_db_libconfig_sub;
 	mob->skill_db_libconfig_sub_skill = mob_skill_db_libconfig_sub_skill;
-	mob->read_group_db = mob_read_group_db;
-	mob->read_group_db_libconfig = mob_read_group_db_libconfig;
-	mob->read_group_db_libconfig_sub = mob_read_group_db_libconfig_sub;
-	mob->read_group_db_libconfig_sub_group = mob_read_group_db_libconfig_sub_group;
 }

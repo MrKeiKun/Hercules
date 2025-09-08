@@ -608,6 +608,7 @@ struct mob_interface {
 	int (*read_db_sub) (struct config_setting_t *mobt, int id, const char *source);
 	void (*read_db_drops_sub) (struct mob_db *entry, struct config_setting_t *t);
 	void (*read_db_mvpdrops_sub) (struct mob_db *entry, struct config_setting_t *t);
+	void (*read_db_summon_sub) (struct mob_db *entry, struct config_setting_t *t);
 	uint32 (*read_db_mode_sub) (struct mob_db *entry, struct config_setting_t *t);
 	struct optdrop_group *(*read_db_drops_option) (struct mob_db *entry, const char *item_name, struct config_setting_t *drop, int *drop_rate);
 	void (*read_db_stats_sub) (struct mob_db *entry, struct config_setting_t *t);
@@ -629,10 +630,6 @@ struct mob_interface {
 	bool (*skill_db_libconfig) (const char *filename, bool ignore_missing);
 	bool (*skill_db_libconfig_sub) (struct config_setting_t *it, int n);
 	bool (*skill_db_libconfig_sub_skill) (struct config_setting_t *it, int n, int mob_id);
-	void (*read_group_db) (void);
-	bool (*read_group_db_libconfig) (const char *filename);
-	bool (*read_group_db_libconfig_sub) (struct config_setting_t *it, const char *source);
-	bool (*read_group_db_libconfig_sub_group) (struct config_setting_t *it, enum mob_groups group_id, const char *source);
 };
 
 #ifdef HERCULES_CORE
