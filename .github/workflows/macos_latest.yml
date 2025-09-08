@@ -7,7 +7,7 @@ env:
   MYSQL_USER: ${{ secrets.MYSQL_USER || 'ragnarok' }}
   MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD || 'ragnarok' }}
   MYSQL_ALLOW_EMPTY_PASSWORD: ${{ secrets.MYSQL_ALLOW_EMPTY_PASSWORD || 'yes' }}
-  MACOS_COMMON_PACKAGES: make zlib pcre mysql mysql-client autoconf
+  MACOS_COMMON_PACKAGES: make zlib pcre mysql mysql-client autoconf automake
   SQLHOST: 'localhost'
 
 jobs:
