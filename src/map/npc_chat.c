@@ -31,7 +31,11 @@
 #include "common/strlib.h"
 #include "common/timer.h"
 
+#ifdef HAVE_PCRE
 #include <pcre.h>
+#elif defined(HAVE_PCRE2)
+#include <pcre2.h>
+#endif
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>

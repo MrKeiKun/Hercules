@@ -27,7 +27,11 @@
 #include "common/hercules.h"
 #include "common/db.h"
 
+#ifdef HAVE_PCRE
 #include <pcre.h>
+#elif defined(HAVE_PCRE2)
+#include <pcre2.h>
+#endif
 
 /* Forward declarations */
 struct hplugin_data_store;
