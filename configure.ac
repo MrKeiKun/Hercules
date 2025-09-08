@@ -1229,6 +1229,8 @@ AC_CHECK_COMPILER_WFLAG(zero-length-bounds)
 AC_CHECK_COMPILER_WFLAG(absolute-value)
 AC_CHECK_COMPILER_WFLAG(shift-overflow=2)
 AC_CHECK_COMPILER_WFLAG(enum-int-mismatch)
+AC_CHECK_COMPILER_WFLAG(nan-infinity-disabled)
+AC_CHECK_COMPILER_WNOFLAG(nan-infinity-disabled)
 #AC_CHECK_COMPILER_WFLAG(unreachable-code)
 #AC_CHECK_COMPILER_WFLAG(unused-const-variable=2)
 #AC_CHECK_COMPILER_WFLAG(write-strings)
@@ -1946,6 +1948,7 @@ AC_SUBST([DLLEXT])
 #
 # zlib library (required)
 #
+# Check if zlib is already included via MySQL libs or LIBS to avoid duplicate -lz
 AC_SEARCH_LIBS([inflateEnd], [z], [],[AC_MSG_ERROR([zlib library not found or incompatible... stopping])])
 AC_CHECK_HEADER([zlib.h], [], [AC_MSG_ERROR([zlib header not found, please specify the correct path with... stopping])])
 

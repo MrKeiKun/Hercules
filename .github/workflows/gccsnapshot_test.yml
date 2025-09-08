@@ -75,6 +75,9 @@ jobs:
           ls -la /usr/lib/x86_64-linux-gnu/libasan.* || true
           ls -la /usr/lib/gcc-snapshot/lib/libasan.* || true
           ls -la /usr/lib/gcc-snapshot/lib/libasan.so.8.0.0
+          find /usr/include -name pcre2.h
+          find /lib /usr/lib -name "libpcre2*.so*"
+          
 
       - name: init database
         run: |
