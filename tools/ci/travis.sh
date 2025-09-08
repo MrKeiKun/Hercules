@@ -155,9 +155,12 @@ case "$MODE" in
 		mysql $DBUSER_ARG $DBPASS_ARG $DBHOST_ARG $SSL_ARG --execute="CREATE DATABASE $DBNAME;" || aborterror "Unable to create database."
 		;;
 	importdb)
-		echo "Importing tables into $DBNAME as $DBUSER..."
-		mysql $DBUSER_ARG $DBPASS_ARG $DBHOST_ARG $SSL_ARG --database=$DBNAME < sql-files/main.sql || aborterror "Unable to import main database."
-		mysql $DBUSER_ARG $DBPASS_ARG $DBHOST_ARG $SSL_ARG --database=$DBNAME < sql-files/logs.sql || aborterror "Unable to import logs database."
+		echo "Starting database import process for $DBNAME as $DBUSER..."
+		echo "Importing main.sql into $DBNAME..."
+		mysql -v $DBUSER_ARG $DBPASS_ARG $DBHOST_ARG $SSL_ARG --database=$DBNAME < sql-files/main.sql || aborterror "Unable to import main database."
+		echo "Successfully imported main.sql."
+		echo "Importing logs.sql into $DBNAME..."
+		mysql -v $DBUSER_ARG $DBPASS_ARG $DBHOST_ARG $SSL_ARG --database=$DBNAME < sql-files/logs.sql || aborterror "Unable to import logs database."
 		;;
 	adduser)
 		echo "Adding user $NEWUSER as $DBUSER, with access to database $DBNAME..."
