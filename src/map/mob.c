@@ -5417,6 +5417,17 @@ static void mob_mobavail_removal_notice(void)
 	}
 }
 
+static void mob_race2_db_removal_notice(void)
+{
+	char filepath[270];
+
+	snprintf(filepath, sizeof(filepath), "%s/mob_race2_db.txt", DBPATH);
+
+	if (exists(filepath)) {
+		ShowError("mob_race2_db_removal_notice: the usage of %s/mob_race2_db.txt is no longer supported, data has been merged into mob_db.conf. Please delete the database file to suspend this message.\n", DBPATH);
+	}
+}
+
 static void mob_read_group_db(void)
 {
 	const char *filename[] = {
@@ -5968,6 +5979,7 @@ static void mob_load(bool minimal)
 	mob->readdb();
 	mob->readskilldb();
 	mob->mobavail_removal_notice();
+	mob->race2_db_removal_notice();
 	mob->read_group_db();
 }
 
@@ -6298,6 +6310,7 @@ void mob_defaults(void)
 	mob->read_db_viewdata_sub = mob_read_db_viewdata_sub;
 	mob->name_constants = mob_name_constants;
 	mob->mobavail_removal_notice = mob_mobavail_removal_notice;
+	mob->race2_db_removal_notice = mob_race2_db_removal_notice;
 	mob->parse_row_chatdb = mob_parse_row_chatdb;
 	mob->readchatdb = mob_readchatdb;
 	mob->readskilldb = mob_readskilldb;
