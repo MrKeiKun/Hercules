@@ -26,12 +26,7 @@
 #include "map/unit.h" // struct unit_data
 #include "common/hercules.h"
 #include "common/db.h"
-
-#ifdef HAVE_PCRE
-#include <pcre.h>
-#elif defined(HAVE_PCRE2)
-#include <pcre2.h>
-#endif
+#include "common/regex.h"
 
 /* Forward declarations */
 struct hplugin_data_store;
@@ -418,22 +413,6 @@ struct npc_chat_interface {
 };
 
 /**
- * pcre interface (libpcre)
- * so that plugins may share and take advantage of the core's pcre
- * should be moved into core/perhaps its own file once hpm is enhanced for login/char
- **/
-struct pcre_interface {
-	pcre *(*compile) (const char *pattern, int options, const char **errptr, int *erroffset, const unsigned char *tableptr);
-	pcre_extra *(*study) (const pcre *code, int options, const char **errptr);
-	int (*exec) (const pcre *code, const pcre_extra *extra, PCRE_SPTR subject, int length, int startoffset, int options, int *ovector, int ovecsize);
-	void (*free) (void *ptr);
-	int (*copy_substring) (const char *subject, int *ovector, int stringcount, int stringnumber, char *buffer, int buffersize);
-	void (*free_substring) (const char *stringptr);
-	int (*copy_named_substring) (const pcre *code, const char *subject, int *ovector, int stringcount, const char *stringname, char *buffer, int buffersize);
-	int (*get_substring) (const char *subject, int *ovector, int stringcount, int stringnumber, const char **stringptr);
-};
-
-/**
  * Also defaults libpcre
  **/
 #ifdef HERCULES_CORE
@@ -441,6 +420,5 @@ void npc_chat_defaults(void);
 #endif // HERCULES_CORE
 
 HPShared struct npc_chat_interface *npc_chat;
-HPShared struct pcre_interface *libpcre;
 
 #endif /* MAP_NPC_H */

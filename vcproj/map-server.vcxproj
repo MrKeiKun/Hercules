@@ -170,6 +170,7 @@
     <ClInclude Include="..\src\common\thread.h" />
     <ClInclude Include="..\src\common\timer.h" />
     <ClInclude Include="..\src\common\utils.h" />
+    <ClInclude Include="..\src\common\regex.h" />
     <ClInclude Include="..\src\common\winapi.h" />
     <ClInclude Include="..\src\config\classes\general.h" />
     <ClInclude Include="..\src\config\const.h" />
@@ -274,6 +275,7 @@
     <ClCompile Include="..\src\common\thread.c" />
     <ClCompile Include="..\src\common\timer.c" />
     <ClCompile Include="..\src\common\utils.c" />
+    <ClCompile Include="..\src\common\regex.c" />
     <ClCompile Include="..\src\map\achievement.c" />
     <ClCompile Include="..\src\map\atcommand.c" />
     <ClCompile Include="..\src\map\battle.c" />

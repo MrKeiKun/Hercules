@@ -30,72 +30,13 @@
 #include "common/showmsg.h"
 #include "common/strlib.h"
 #include "common/timer.h"
-
-#ifdef HAVE_PCRE
-#include <pcre.h>
-#elif defined(HAVE_PCRE2)
-#include <pcre2.h>
-#endif
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-/**
- * interface sources
- **/
 static struct npc_chat_interface npc_chat_s;
-static struct pcre_interface libpcre_s;
-
-struct npc_chat_interface *npc_chat;
-struct pcre_interface *libpcre;
-
-/**
- *  Written by MouseJstr in a vision... (2/21/2005)
- *
- *  This allows you to make npc listen for spoken text (global
- *  messages) and pattern match against that spoken text using perl
- *  regular expressions.
- *
- *  Please feel free to copy this code into your own personal ragnarok
- *  servers or distributions but please leave my name.  Also, please
- *  wait until I've put it into the main eA branch which means I
- *  believe it is ready for distribution.
- *
- *  So, how do people use this?
- *
- *  The first and most important function is defpattern
- *
- *    defpattern 1, "[^:]+: (.*) loves (.*)", "label";
- *
- *  this defines a new pattern in set 1 using perl syntax
- *    (http://www.troubleshooters.com/codecorn/littperl/perlreg.htm)
- *  and tells it to jump to the supplied label when the pattern
- *  is matched.
- *
- *  each of the matched Groups will result in a variable being
- *  set ($@p1$ through $@p9$  with $@p0$ being the entire string)
- *  before the script gets executed.
- *
- *    activatepset 1;
- *
- *  This activates a set of patterns.. You can have many pattern
- *  sets defined and many active all at once.  This feature allows
- *  you to set up "conversations" and ever changing expectations of
- *  the pattern matcher
- *
- *    deactivatepset 1;
- *
- *  turns off a pattern set;
- *
- *    deactivatepset -1;
- *
- *  turns off ALL pattern sets;
- *
- *    deletepset 1;
- *
- *  deletes a pset
- */
+struct npc_chat_interface* npc_chat;
 
 /**
  * delete everything associated with a entry
@@ -330,6 +271,53 @@ static void npc_chat_def_pattern(struct npc_data *nd, int setid, const char *pat
 }
 
 /**
+ *  Written by MouseJstr in a vision... (2/21/2005)
+ *
+ *  This allows you to make npc listen for spoken text (global
+ *  messages) and pattern match against that spoken text using perl
+ *  regular expressions.
+ *
+ *  Please feel free to copy this code into your own personal ragnarok
+ *  servers or distributions but please leave my name.  Also, please
+ *  wait until I've put it into the main eA branch which means I
+ *  believe it is ready for distribution.
+ *
+ *  So, how do people use this?
+ *
+ *  The first and most important function is defpattern
+ *
+ *    defpattern 1, "[^:]+: (.*) loves (.*)", "label";
+ *
+ *  this defines a new pattern in set 1 using perl syntax
+ *    (http://www.troubleshooters.com/codecorn/littperl/perlreg.htm)
+ *  and tells it to jump to the supplied label when the pattern
+ *  is matched.
+ *
+ *  each of the matched Groups will result in a variable being
+ *  set ($@p1$ through $@p9$  with $@p0$ being the entire string)
+ *  before the script gets executed.
+ *
+ *    activatepset 1;
+ *
+ *  This activates a set of patterns.. You can have many pattern
+ *  sets defined and many active all at once.  This feature allows
+ *  you to set up "conversations" and ever changing expectations of
+ *  the pattern matcher
+ *
+ *    deactivatepset 1;
+ *
+ *  turns off a pattern set;
+ *
+ *    deactivatepset -1;
+ *
+ *  turns off ALL pattern sets;
+ *
+ *    deletepset 1;
+ *
+ *  deletes a pset
+ */
+
+/**
  * Delete everything associated with a NPC concerning the pattern
  * matching code
  *
@@ -482,15 +470,4 @@ void npc_chat_defaults(void)
 	npc_chat->activate_pcreset = activate_pcreset;
 	npc_chat->lookup_pcreset = lookup_pcreset;
 	npc_chat->finalize_pcrematch_entry = finalize_pcrematch_entry;
-
-	libpcre = &libpcre_s;
-
-	libpcre->compile = pcre_compile;
-	libpcre->study = pcre_study;
-	libpcre->exec = pcre_exec;
-	libpcre->free = pcre_free;
-	libpcre->copy_substring = pcre_copy_substring;
-	libpcre->free_substring = pcre_free_substring;
-	libpcre->copy_named_substring = pcre_copy_named_substring;
-	libpcre->get_substring = pcre_get_substring;
 }

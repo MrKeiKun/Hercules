@@ -39,6 +39,7 @@
 #include "common/nullpo.h"
 #include "common/packets.h"
 #include "common/random.h"
+#include "common/regex.h"
 #include "common/showmsg.h"
 #include "common/socket.h"
 #include "common/sql.h"
@@ -266,6 +267,7 @@ static void core_defaults(void)
 	packets_defaults();
 	rnd_defaults();
 	md5_defaults();
+	regex_defaults();
 	thread_defaults();
 	base62_defaults();
 }
