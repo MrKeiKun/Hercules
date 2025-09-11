@@ -6132,6 +6132,8 @@ static int pc_setpos(struct map_session_data *sd, unsigned short map_index, int 
 	if (battle_config.player_warp_keep_direction == 0)
 		sd->ud.dir = 0; // Make character facing north.
 
+	bool old_hide_costumes = (sd->bl.prev != NULL) ? (map->list[sd->bl.m].flag.noviewid & EQP_COSTUME) != 0 : false;
+
 	if (sd->bl.prev != NULL) {
 		unit->remove_map_pc(sd, clrtype);
 		clif->changemap(sd, map_id, x, y); // [MouseJstr]
@@ -6152,6 +6154,14 @@ static int pc_setpos(struct map_session_data *sd, unsigned short map_index, int 
 	sd->bl.y = y;
 	sd->ud.to_x = x;
 	sd->ud.to_y = y;
+
+	if (sd->bl.prev != NULL) {
+		bool new_hide_costumes = (map->list[map_id].flag.noviewid & EQP_COSTUME) != 0;
+		if (old_hide_costumes != new_hide_costumes) {
+			clif->maptypeproperty2(&sd->bl, SELF);
+		}
+		pc->equiplookall(sd);
+	}
 
 	if (sd->status.pet_id > 0 && sd->pd != NULL && sd->pd->pet.intimate > PET_INTIMACY_NONE) {
 		sd->pd->bl.m = map_id;
