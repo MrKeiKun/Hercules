@@ -2110,33 +2110,79 @@ AC_SUBST([MYSQL_LIBS])
 #
 # PCRE library (optional)
 #
-AC_MSG_CHECKING([for PCRE library])
+AC_MSG_CHECKING([for PCRE library support])
 HAVE_PCRE_SUPPORT=no
 
 # First, try legacy PCRE
+AC_MSG_CHECKING([for legacy PCRE headers (pcre.h)])
 AC_CHECK_HEADER([pcre.h], [
+    AC_MSG_RESULT([found])
+    AC_MSG_CHECKING([for legacy PCRE library (-lpcre)])
     AC_SEARCH_LIBS([pcre_study], [pcre], [
+        AC_MSG_RESULT([found])
         AC_DEFINE([PCRE_SUPPORT], [1], [Define to 1 if PCRE is available])
         AC_DEFINE([HAVE_PCRE], [1], [Define to 1 if legacy PCRE is available])
         HAVE_PCRE_SUPPORT=yes
+    ], [
+        AC_MSG_RESULT([not found])
     ])
+], [
+    AC_MSG_RESULT([not found])
 ])
 
 # If legacy PCRE not found, try PCRE2
 if test "$HAVE_PCRE_SUPPORT" = "no"; then
-    AC_CHECK_HEADER([pcre2.h], [
-		AC_SEARCH_LIBS([pcre2_compile_8], [pcre2-8 pcre2-16 pcre2-32], [
-			AC_DEFINE([PCRE_SUPPORT], [1], [Define to 1 if PCRE is available])
-			AC_DEFINE([HAVE_PCRE2], [1], [Define to 1 if PCRE2 is available])
-			AC_DEFINE([PCRE2_CODE_UNIT_WIDTH], [8], [PCRE2 code unit width])
-			HAVE_PCRE_SUPPORT=yes
-		])
-    ])
+    AC_MSG_CHECKING([for PCRE2 headers (pcre2.h)])
+    AC_CHECK_HEADERS([pcre2.h])
+    if test "$ac_cv_header_pcre2_h" = "yes"; then
+        AC_MSG_RESULT([found])
+        pcre2_found=no
+        AC_MSG_CHECKING([for PCRE2 8-bit library (-lpcre2-8)])
+        AC_SEARCH_LIBS([pcre2_compile_8], [pcre2-8], [
+            AC_MSG_RESULT([found])
+            AC_DEFINE([PCRE_SUPPORT], [1], [Define if PCRE is available])
+            AC_DEFINE([HAVE_PCRE2], [1], [Define if PCRE2 is available])
+            AC_DEFINE([PCRE2_CODE_UNIT_WIDTH], [8], [PCRE2 code unit width])
+            HAVE_PCRE_SUPPORT=yes
+            pcre2_found=yes
+        ], [
+            AC_MSG_RESULT([not found])
+        ])
+        if test "$pcre2_found" = "no"; then
+            AC_MSG_CHECKING([for PCRE2 16-bit library (-lpcre2-16)])
+            AC_SEARCH_LIBS([pcre2_compile_16], [pcre2-16], [
+                AC_MSG_RESULT([found])
+                AC_DEFINE([PCRE_SUPPORT], [1], [Define if PCRE is available])
+                AC_DEFINE([HAVE_PCRE2], [1], [Define if PCRE2 is available])
+                AC_DEFINE([PCRE2_CODE_UNIT_WIDTH], [16], [PCRE2 code unit width])
+                HAVE_PCRE_SUPPORT=yes
+                pcre2_found=yes
+            ], [
+                AC_MSG_RESULT([not found])
+            ])
+        fi
+        if test "$pcre2_found" = "no"; then
+            AC_MSG_CHECKING([for PCRE2 32-bit library (-lpcre2-32)])
+            AC_SEARCH_LIBS([pcre2_compile_32], [pcre2-32], [
+                AC_MSG_RESULT([found])
+                AC_DEFINE([PCRE_SUPPORT], [1], [Define if PCRE is available])
+                AC_DEFINE([HAVE_PCRE2], [1], [Define if PCRE2 is available])
+                AC_DEFINE([PCRE2_CODE_UNIT_WIDTH], [32], [PCRE2 code unit width])
+                HAVE_PCRE_SUPPORT=yes
+                pcre2_found=yes
+            ], [
+                AC_MSG_RESULT([not found])
+            ])
+        fi
+    else
+        AC_MSG_RESULT([not found])
+    fi
 fi
 
-# Handle the case where neither is found
 if test "$HAVE_PCRE_SUPPORT" = "no"; then
     AC_MSG_WARN([Building without PCRE support - some features may be disabled])
+else
+    AC_MSG_NOTICE([PCRE support enabled])
 fi
 
 #
