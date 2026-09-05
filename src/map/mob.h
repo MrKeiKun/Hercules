@@ -531,6 +531,7 @@ struct mob_interface {
 	void (*free_dynamic_viewdata) (struct mob_data *md);
 	int (*parse_dataset) (struct spawn_data *data);
 	struct mob_data* (*spawn_dataset) (struct spawn_data *data, int npc_id);
+	enum e_bosstype (*get_boss_type) (int class_);
 	int (*get_random_id) (enum mob_groups type, int flag, int lv);
 	bool (*ksprotected) (struct block_list *src, struct block_list *target);
 	struct mob_data* (*once_spawn_sub) (struct block_list *bl, int16 m, int16 x, int16 y, const char *mobname, int class_, const char *event, unsigned int size, unsigned int ai, int npc_id);

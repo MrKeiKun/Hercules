@@ -350,6 +350,28 @@ static void mob_free_dynamic_viewdata(struct mob_data *md)
 	md->vd_changed = false;
 }
 
+/**
+ * Determines the boss type (none/miniboss/MVP) of a monster class from its database entry.
+ *
+ * Used to apply the correct state.boss to mobs spawned outside of the `boss_monster`/
+ * `miniboss_monster` npc-file syntax (e.g. @monster, monster()), which have no other way
+ * to indicate the intended boss type.
+ *
+ * @param class_ The mob's class (database ID).
+ * @return BTYPE_MVP if the mob is a boss-mode monster with MVP experience, BTYPE_BOSS if it
+ *         is a boss-mode monster without MVP experience, otherwise BTYPE_NONE.
+ *
+ **/
+static enum e_bosstype mob_get_boss_type(int class_)
+{
+	struct mob_db *db = mob->db(class_);
+
+	if ((db->status.mode & MD_BOSS) == 0)
+		return BTYPE_NONE;
+
+	return (db->mexp > 0) ? BTYPE_MVP : BTYPE_BOSS;
+}
+
 /*==========================================
  * Cleans up mob-spawn data to make it "valid"
  *------------------------------------------*/
@@ -610,6 +632,8 @@ static struct mob_data *mob_once_spawn_sub(struct block_list *bl, int16 m, int16
 
 	if (mob->parse_dataset(&data) == 0)
 		return NULL;
+
+	data.state.boss = mob->get_boss_type(data.class_);
 
 	return mob->spawn_dataset(&data, npc_id);
 }
@@ -6247,6 +6271,7 @@ void mob_defaults(void)
 	mob->free_dynamic_viewdata = mob_free_dynamic_viewdata;
 	mob->parse_dataset = mob_parse_dataset;
 	mob->spawn_dataset = mob_spawn_dataset;
+	mob->get_boss_type = mob_get_boss_type;
 	mob->get_random_id = mob_get_random_id;
 	mob->ksprotected = mob_ksprotected;
 	mob->once_spawn_sub = mob_once_spawn_sub;
