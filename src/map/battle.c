@@ -7266,9 +7266,12 @@ static int battle_check_target(struct block_list *src, struct block_list *target
 	int state = 0; //Initial state none
 	int strip_enemy = 1; //Flag which marks whether to remove the BCT_ENEMY status if it's also friend/ally.
 	struct block_list *s_bl = src, *t_bl = target;
+	bool ignore_basilica = (flag & BCT_IGNORE_BASILICA) != 0;
 
 	nullpo_ret(src);
 	nullpo_ret(target);
+
+	flag &= ~BCT_IGNORE_BASILICA;
 
 	m = target->m;
 
@@ -7280,7 +7283,8 @@ static int battle_check_target(struct block_list *src, struct block_list *target
 	if( (s_bl = battle->get_master(src)) == NULL )
 		s_bl = src;
 
-	if ((flag & BCT_ENEMY) != 0 && (status_get_mode(s_bl) & MD_BOSS) == 0 && (map->getcell(m, src, src->x, src->y, CELL_CHKBASILICA) != 0
+	if (!ignore_basilica && (flag & BCT_ENEMY) != 0 && (status_get_mode(s_bl) & MD_BOSS) == 0
+	    && (map->getcell(m, src, src->x, src->y, CELL_CHKBASILICA) != 0
 	    || map->getcell(m, src, target->x, target->y, CELL_CHKBASILICA) != 0)) {
 		return -1;
 	}

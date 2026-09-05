@@ -14693,7 +14693,8 @@ static int skill_unit_onplace_timer(struct skill_unit *src, struct block_list *b
 
 		case UNT_BASILICA:
 			{
-				int i = battle->check_target(&src->bl, bl, BCT_ENEMY);
+				// BCT_IGNORE_BASILICA needed since we're checking from within the Basilica cell itself
+				int i = battle->check_target(&src->bl, bl, BCT_ENEMY | BCT_IGNORE_BASILICA);
 				if( i > 0 && !(status_get_mode(bl)&MD_BOSS) )
 				{ // knock-back any enemy except Boss
 					skill->blown(&src->bl, bl, 2, unit->getdir(bl), 0);

@@ -93,6 +93,8 @@ enum e_battle_check_target { //New definitions [Skotlex]
 	BCT_NOENEMY     =   0x3d0000, ///< This must be (~BCT_ENEMY&BCT_ALL)
 
 	BCT_ALL         =   0x3f0000, ///< Sum of BCT_NOONE to BCT_SAMEGUILD
+
+	BCT_IGNORE_BASILICA = 0x400000, ///< Modifier: skip the Basilica-cell check in battle_check_target() (not a target mask)
 };
 
 /**
