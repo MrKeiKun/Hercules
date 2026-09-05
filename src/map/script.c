@@ -11159,7 +11159,7 @@ static BUILDIN(bonus)
  * Returns false if autobonus() was called outside of any of those contexts
  * (e.g. from a plain NPC script), in which case the caller should no-op.
  */
-static bool script_autobonus_source(struct map_session_data *sd, struct s_autobonus_source *out_source)
+static bool autobonus_source_from_script_context(struct map_session_data *sd, struct s_autobonus_source *out_source)
 {
 	nullpo_retr(false, sd);
 	nullpo_retr(false, out_source);
@@ -11195,7 +11195,7 @@ static BUILDIN(autobonus)
 	if (sd == NULL)
 		return true; // no player attached
 
-	if (!script_autobonus_source(sd, &source))
+	if (!autobonus_source_from_script_context(sd, &source))
 		return true;
 	if (pc->autobonus_is_active(sd->autobonus, ARRAYLENGTH(sd->autobonus), &source))
 		return true;
@@ -11233,7 +11233,7 @@ static BUILDIN(autobonus2)
 	if (sd == NULL)
 		return true; // no player attached
 
-	if (!script_autobonus_source(sd, &source))
+	if (!autobonus_source_from_script_context(sd, &source))
 		return true;
 	if (pc->autobonus_is_active(sd->autobonus2, ARRAYLENGTH(sd->autobonus2), &source))
 		return true;
@@ -11270,7 +11270,7 @@ static BUILDIN(autobonus3)
 	if (sd == NULL)
 		return true; // no player attached
 
-	if (!script_autobonus_source(sd, &source))
+	if (!autobonus_source_from_script_context(sd, &source))
 		return true;
 	if (pc->autobonus_is_active(sd->autobonus3, ARRAYLENGTH(sd->autobonus3), &source))
 		return true;
