@@ -1113,6 +1113,16 @@ static int pc_isequip(struct map_session_data *sd, int n)
 #endif
 			return 0;
 		}
+
+#ifdef RENEWAL
+		if (item->subtype == A_ARROW && battle_config.bow_unequip_arrow != 0
+		    && sd->weapontype1 != W_BOW && sd->weapontype1 != W_MUSICAL && sd->weapontype1 != W_WHIP) {
+#if PACKETVER_RE_NUM >= 20091215 || PACKETVER_MAIN_NUM >= 20091215 || defined(PACKETVER_ZERO)
+			clif->msgtable(sd, ((sd->job & JOBL_2_2) != 0) ? MSG_FAIL_NEED_EQUIPPED_INSTRUMENT_WHIP : MSG_FAIL_NEED_EQUIPPED_BOW);
+#endif
+			return 0;
+		}
+#endif
 	}
 
 	if ((battle_config.unequip_restricted_equipment & 1) != 0) {
